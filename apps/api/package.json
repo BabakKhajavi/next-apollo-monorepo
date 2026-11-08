@@ -22,6 +22,11 @@
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts"
   },
   "dependencies": {
+    "@monorepo/ai-helper": "workspace:*",
+    "@monorepo/apollo-server": "workspace:*",
+    "@monorepo/auth": "workspace:*",
+    "@monorepo/graphql-contracts": "workspace:*",
+    "@monorepo/realtime": "workspace:*",
     "@nestjs/common": "^12.0.1",
     "@nestjs/core": "^12.0.1",
     "@nestjs/platform-express": "^12.0.1",

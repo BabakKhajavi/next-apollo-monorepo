@@ -9,6 +9,10 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@monorepo/apollo-client": "workspace:*",
+    "@monorepo/auth": "workspace:*",
+    "@monorepo/design-system": "workspace:*",
+    "@monorepo/graphql-contracts": "workspace:*",
     "next": "16.4.5",
     "react": "19.3.0",
     "react-dom": "19.3.0"

@@ -1,0 +1,1631 @@
+{
+  "graph": {
+    "nodes": {
+      "graphql-contracts": {
+        "name": "graphql-contracts",
+        "type": "lib",
+        "data": {
+          "root": "packages/graphql-contracts",
+          "targets": {
+            "oxlint": {
+              "executor": "@nx/oxlint:lint",
+              "cache": true,
+              "inputs": [
+                {
+                  "fileset": "{projectRoot}/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue,svelte,astro}"
+                },
+                {
+                  "fileset": "{projectRoot}/**/{.oxlintrc.json,.oxlintrc.jsonc,oxlint.config.ts,oxlint.config.mts,.eslintignore,.gitignore,tsconfig*.json}"
+                },
+                "{workspaceRoot}/.oxlintrc.json",
+                "{workspaceRoot}/packages/.eslintignore",
+                "{workspaceRoot}/packages/.gitignore",
+                "{workspaceRoot}/.eslintignore",
+                "{workspaceRoot}/.gitignore",
+                {
+                  "externalDependencies": [
+                    "oxlint"
+                  ]
+                }
+              ],
+              "metadata": {
+                "technologies": [
+                  "oxlint"
+                ],
+                "description": "Runs Oxlint on project",
+                "help": {
+                  "command": "pnpm exec oxlint --help",
+                  "example": {
+                    "options": {
+                      "max-warnings": 0
+                    }
+                  }
+                }
+              },
+              "configurations": {},
+              "options": {},
+              "parallelism": true
+            },
+            "eslint:lint": {
+              "cache": true,
+              "inputs": [
+                "default",
+                "^default",
+                "{workspaceRoot}/eslint.config.mjs",
+                "{workspaceRoot}/tools/eslint-rules/**/*",
+                {
+                  "externalDependencies": [
+                    "eslint"
+                  ]
+                }
+              ],
+              "outputs": [
+                "{options.cwd ?? .}/{options.o ?? options.output-file}"
+              ],
+              "metadata": {
+                "technologies": [
+                  "eslint"
+                ],
+                "description": "Runs ESLint on project",
+                "help": {
+                  "command": "pnpm exec eslint --help",
+                  "example": {
+                    "options": {
+                      "max-warnings": 0
+                    }
+                  }
+                }
+              },
+              "executor": "nx:run-commands",
+              "options": {
+                "cwd": "packages/graphql-contracts",
+                "command": "eslint ."
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "build": {
+              "dependsOn": [
+                "^build"
+              ],
+              "cache": true,
+              "executor": "@nx/js:tsc",
+              "outputs": [
+                "{options.outputPath}"
+              ],
+              "options": {
+                "outputPath": "dist/packages/graphql-contracts",
+                "main": "packages/graphql-contracts/src/index.ts",
+                "tsConfig": "packages/graphql-contracts/tsconfig.json"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "nx-release-publish": {
+              "executor": "@nx/js:release-publish",
+              "dependsOn": [
+                "^nx-release-publish"
+              ],
+              "options": {},
+              "configurations": {},
+              "parallelism": true
+            },
+            "codegen": {
+              "executor": "nx:run-commands",
+              "options": {
+                "command": "graphql-codegen --config packages/graphql-contracts/codegen.yml"
+              },
+              "configurations": {},
+              "parallelism": true
+            }
+          },
+          "name": "graphql-contracts",
+          "tags": [
+            "npm:public",
+            "scope:graphql-contracts",
+            "type:shared"
+          ],
+          "metadata": {
+            "targetGroups": {},
+            "js": {
+              "packageName": "@monorepo/graphql-contracts",
+              "packageVersion": "0.0.1",
+              "packageExports": {
+                ".": "./src/index.ts"
+              },
+              "packageMain": "./src/index.ts",
+              "isInPackageManagerWorkspaces": true
+            }
+          },
+          "sourceRoot": "packages/graphql-contracts/src",
+          "projectType": "library",
+          "implicitDependencies": []
+        }
+      },
+      "apollo-client": {
+        "name": "apollo-client",
+        "type": "lib",
+        "data": {
+          "root": "packages/apollo-client",
+          "targets": {
+            "oxlint": {
+              "executor": "@nx/oxlint:lint",
+              "cache": true,
+              "inputs": [
+                {
+                  "fileset": "{projectRoot}/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue,svelte,astro}"
+                },
+                {
+                  "fileset": "{projectRoot}/**/{.oxlintrc.json,.oxlintrc.jsonc,oxlint.config.ts,oxlint.config.mts,.eslintignore,.gitignore,tsconfig*.json}"
+                },
+                "{workspaceRoot}/.oxlintrc.json",
+                "{workspaceRoot}/packages/.eslintignore",
+                "{workspaceRoot}/packages/.gitignore",
+                "{workspaceRoot}/.eslintignore",
+                "{workspaceRoot}/.gitignore",
+                {
+                  "externalDependencies": [
+                    "oxlint"
+                  ]
+                }
+              ],
+              "metadata": {
+                "technologies": [
+                  "oxlint"
+                ],
+                "description": "Runs Oxlint on project",
+                "help": {
+                  "command": "pnpm exec oxlint --help",
+                  "example": {
+                    "options": {
+                      "max-warnings": 0
+                    }
+                  }
+                }
+              },
+              "configurations": {},
+              "options": {},
+              "parallelism": true
+            },
+            "eslint:lint": {
+              "cache": true,
+              "inputs": [
+                "default",
+                "^default",
+                "{workspaceRoot}/eslint.config.mjs",
+                "{workspaceRoot}/tools/eslint-rules/**/*",
+                {
+                  "externalDependencies": [
+                    "eslint"
+                  ]
+                }
+              ],
+              "outputs": [
+                "{options.cwd ?? .}/{options.o ?? options.output-file}"
+              ],
+              "metadata": {
+                "technologies": [
+                  "eslint"
+                ],
+                "description": "Runs ESLint on project",
+                "help": {
+                  "command": "pnpm exec eslint --help",
+                  "example": {
+                    "options": {
+                      "max-warnings": 0
+                    }
+                  }
+                }
+              },
+              "executor": "nx:run-commands",
+              "options": {
+                "cwd": "packages/apollo-client",
+                "command": "eslint ."
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "build": {
+              "dependsOn": [
+                "^build"
+              ],
+              "cache": true,
+              "executor": "@nx/js:tsc",
+              "outputs": [
+                "{options.outputPath}"
+              ],
+              "options": {
+                "outputPath": "dist/packages/apollo-client",
+                "main": "packages/apollo-client/src/index.ts",
+                "tsConfig": "packages/apollo-client/tsconfig.json"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "nx-release-publish": {
+              "executor": "@nx/js:release-publish",
+              "dependsOn": [
+                "^nx-release-publish"
+              ],
+              "options": {},
+              "configurations": {},
+              "parallelism": true
+            }
+          },
+          "name": "apollo-client",
+          "tags": [
+            "npm:public",
+            "scope:apollo-client",
+            "type:data-access",
+            "platform:frontend"
+          ],
+          "metadata": {
+            "targetGroups": {},
+            "js": {
+              "packageName": "@monorepo/apollo-client",
+              "packageVersion": "0.0.1",
+              "packageExports": {
+                ".": "./src/index.ts"
+              },
+              "packageMain": "./src/index.ts",
+              "isInPackageManagerWorkspaces": true
+            }
+          },
+          "sourceRoot": "packages/apollo-client/src",
+          "projectType": "library",
+          "implicitDependencies": []
+        }
+      },
+      "apollo-server": {
+        "name": "apollo-server",
+        "type": "lib",
+        "data": {
+          "root": "packages/apollo-server",
+          "targets": {
+            "oxlint": {
+              "executor": "@nx/oxlint:lint",
+              "cache": true,
+              "inputs": [
+                {
+                  "fileset": "{projectRoot}/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue,svelte,astro}"
+                },
+                {
+                  "fileset": "{projectRoot}/**/{.oxlintrc.json,.oxlintrc.jsonc,oxlint.config.ts,oxlint.config.mts,.eslintignore,.gitignore,tsconfig*.json}"
+                },
+                "{workspaceRoot}/.oxlintrc.json",
+                "{workspaceRoot}/packages/.eslintignore",
+                "{workspaceRoot}/packages/.gitignore",
+                "{workspaceRoot}/.eslintignore",
+                "{workspaceRoot}/.gitignore",
+                {
+                  "externalDependencies": [
+                    "oxlint"
+                  ]
+                }
+              ],
+              "metadata": {
+                "technologies": [
+                  "oxlint"
+                ],
+                "description": "Runs Oxlint on project",
+                "help": {
+                  "command": "pnpm exec oxlint --help",
+                  "example": {
+                    "options": {
+                      "max-warnings": 0
+                    }
+                  }
+                }
+              },
+              "configurations": {},
+              "options": {},
+              "parallelism": true
+            },
+            "eslint:lint": {
+              "cache": true,
+              "inputs": [
+                "default",
+                "^default",
+                "{workspaceRoot}/eslint.config.mjs",
+                "{workspaceRoot}/tools/eslint-rules/**/*",
+                {
+                  "externalDependencies": [
+                    "eslint"
+                  ]
+                }
+              ],
+              "outputs": [
+                "{options.cwd ?? .}/{options.o ?? options.output-file}"
+              ],
+              "metadata": {
+                "technologies": [
+                  "eslint"
+                ],
+                "description": "Runs ESLint on project",
+                "help": {
+                  "command": "pnpm exec eslint --help",
+                  "example": {
+                    "options": {
+                      "max-warnings": 0
+                    }
+                  }
+                }
+              },
+              "executor": "nx:run-commands",
+              "options": {
+                "cwd": "packages/apollo-server",
+                "command": "eslint ."
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "build": {
+              "dependsOn": [
+                "^build"
+              ],
+              "cache": true,
+              "executor": "@nx/js:tsc",
+              "outputs": [
+                "{options.outputPath}"
+              ],
+              "options": {
+                "outputPath": "dist/packages/apollo-server",
+                "main": "packages/apollo-server/src/index.ts",
+                "tsConfig": "packages/apollo-server/tsconfig.json"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "nx-release-publish": {
+              "executor": "@nx/js:release-publish",
+              "dependsOn": [
+                "^nx-release-publish"
+              ],
+              "options": {},
+              "configurations": {},
+              "parallelism": true
+            }
+          },
+          "name": "apollo-server",
+          "tags": [
+            "npm:public",
+            "scope:apollo-server",
+            "type:data-access",
+            "platform:backend"
+          ],
+          "metadata": {
+            "targetGroups": {},
+            "js": {
+              "packageName": "@monorepo/apollo-server",
+              "packageVersion": "0.0.1",
+              "packageExports": {
+                ".": "./src/index.ts"
+              },
+              "packageMain": "./src/index.ts",
+              "isInPackageManagerWorkspaces": true
+            }
+          },
+          "sourceRoot": "packages/apollo-server/src",
+          "projectType": "library",
+          "implicitDependencies": []
+        }
+      },
+      "design-system": {
+        "name": "design-system",
+        "type": "lib",
+        "data": {
+          "root": "packages/design-system",
+          "targets": {
+            "oxlint": {
+              "executor": "@nx/oxlint:lint",
+              "cache": true,
+              "inputs": [
+                {
+                  "fileset": "{projectRoot}/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue,svelte,astro}"
+                },
+                {
+                  "fileset": "{projectRoot}/**/{.oxlintrc.json,.oxlintrc.jsonc,oxlint.config.ts,oxlint.config.mts,.eslintignore,.gitignore,tsconfig*.json}"
+                },
+                "{workspaceRoot}/.oxlintrc.json",
+                "{workspaceRoot}/packages/.eslintignore",
+                "{workspaceRoot}/packages/.gitignore",
+                "{workspaceRoot}/.eslintignore",
+                "{workspaceRoot}/.gitignore",
+                {
+                  "externalDependencies": [
+                    "oxlint"
+                  ]
+                }
+              ],
+              "metadata": {
+                "technologies": [
+                  "oxlint"
+                ],
+                "description": "Runs Oxlint on project",
+                "help": {
+                  "command": "pnpm exec oxlint --help",
+                  "example": {
+                    "options": {
+                      "max-warnings": 0
+                    }
+                  }
+                }
+              },
+              "configurations": {},
+              "options": {},
+              "parallelism": true
+            },
+            "eslint:lint": {
+              "cache": true,
+              "inputs": [
+                "default",
+                "^default",
+                "{workspaceRoot}/eslint.config.mjs",
+                "{workspaceRoot}/tools/eslint-rules/**/*",
+                {
+                  "externalDependencies": [
+                    "eslint"
+                  ]
+                }
+              ],
+              "outputs": [
+                "{options.cwd ?? .}/{options.o ?? options.output-file}"
+              ],
+              "metadata": {
+                "technologies": [
+                  "eslint"
+                ],
+                "description": "Runs ESLint on project",
+                "help": {
+                  "command": "pnpm exec eslint --help",
+                  "example": {
+                    "options": {
+                      "max-warnings": 0
+                    }
+                  }
+                }
+              },
+              "executor": "nx:run-commands",
+              "options": {
+                "cwd": "packages/design-system",
+                "command": "eslint ."
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "build": {
+              "dependsOn": [
+                "^build"
+              ],
+              "cache": true,
+              "executor": "@nx/js:tsc",
+              "outputs": [
+                "{options.outputPath}"
+              ],
+              "options": {
+                "outputPath": "dist/packages/design-system",
+                "main": "packages/design-system/src/index.ts",
+                "tsConfig": "packages/design-system/tsconfig.json"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "nx-release-publish": {
+              "executor": "@nx/js:release-publish",
+              "dependsOn": [
+                "^nx-release-publish"
+              ],
+              "options": {},
+              "configurations": {},
+              "parallelism": true
+            },
+            "storybook": {
+              "executor": "@nx/storybook:storybook",
+              "options": {
+                "configDir": "packages/design-system/.storybook"
+              },
+              "configurations": {},
+              "parallelism": true
+            }
+          },
+          "name": "design-system",
+          "tags": [
+            "npm:public",
+            "scope:design-system",
+            "type:ui"
+          ],
+          "metadata": {
+            "targetGroups": {},
+            "js": {
+              "packageName": "@monorepo/design-system",
+              "packageVersion": "0.0.1",
+              "packageExports": {
+                ".": "./src/index.ts"
+              },
+              "packageMain": "./src/index.ts",
+              "isInPackageManagerWorkspaces": true
+            }
+          },
+          "sourceRoot": "packages/design-system/src",
+          "projectType": "library",
+          "implicitDependencies": []
+        }
+      },
+      "ai-helper": {
+        "name": "ai-helper",
+        "type": "lib",
+        "data": {
+          "root": "packages/ai-helper",
+          "targets": {
+            "oxlint": {
+              "executor": "@nx/oxlint:lint",
+              "cache": true,
+              "inputs": [
+                {
+                  "fileset": "{projectRoot}/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue,svelte,astro}"
+                },
+                {
+                  "fileset": "{projectRoot}/**/{.oxlintrc.json,.oxlintrc.jsonc,oxlint.config.ts,oxlint.config.mts,.eslintignore,.gitignore,tsconfig*.json}"
+                },
+                "{workspaceRoot}/.oxlintrc.json",
+                "{workspaceRoot}/packages/.eslintignore",
+                "{workspaceRoot}/packages/.gitignore",
+                "{workspaceRoot}/.eslintignore",
+                "{workspaceRoot}/.gitignore",
+                {
+                  "externalDependencies": [
+                    "oxlint"
+                  ]
+                }
+              ],
+              "metadata": {
+                "technologies": [
+                  "oxlint"
+                ],
+                "description": "Runs Oxlint on project",
+                "help": {
+                  "command": "pnpm exec oxlint --help",
+                  "example": {
+                    "options": {
+                      "max-warnings": 0
+                    }
+                  }
+                }
+              },
+              "configurations": {},
+              "options": {},
+              "parallelism": true
+            },
+            "eslint:lint": {
+              "cache": true,
+              "inputs": [
+                "default",
+                "^default",
+                "{workspaceRoot}/eslint.config.mjs",
+                "{workspaceRoot}/tools/eslint-rules/**/*",
+                {
+                  "externalDependencies": [
+                    "eslint"
+                  ]
+                }
+              ],
+              "outputs": [
+                "{options.cwd ?? .}/{options.o ?? options.output-file}"
+              ],
+              "metadata": {
+                "technologies": [
+                  "eslint"
+                ],
+                "description": "Runs ESLint on project",
+                "help": {
+                  "command": "pnpm exec eslint --help",
+                  "example": {
+                    "options": {
+                      "max-warnings": 0
+                    }
+                  }
+                }
+              },
+              "executor": "nx:run-commands",
+              "options": {
+                "cwd": "packages/ai-helper",
+                "command": "eslint ."
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "build": {
+              "dependsOn": [
+                "^build"
+              ],
+              "cache": true,
+              "executor": "@nx/js:tsc",
+              "outputs": [
+                "{options.outputPath}"
+              ],
+              "options": {
+                "outputPath": "dist/packages/ai-helper",
+                "main": "packages/ai-helper/src/index.ts",
+                "tsConfig": "packages/ai-helper/tsconfig.json"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "nx-release-publish": {
+              "executor": "@nx/js:release-publish",
+              "dependsOn": [
+                "^nx-release-publish"
+              ],
+              "options": {},
+              "configurations": {},
+              "parallelism": true
+            }
+          },
+          "name": "ai-helper",
+          "tags": [
+            "npm:public",
+            "scope:ai-helper",
+            "type:data-access",
+            "platform:backend"
+          ],
+          "metadata": {
+            "targetGroups": {},
+            "js": {
+              "packageName": "@monorepo/ai-helper",
+              "packageVersion": "0.0.1",
+              "packageExports": {
+                ".": "./src/index.ts"
+              },
+              "packageMain": "./src/index.ts",
+              "isInPackageManagerWorkspaces": true
+            }
+          },
+          "sourceRoot": "packages/ai-helper/src",
+          "projectType": "library",
+          "implicitDependencies": []
+        }
+      },
+      "realtime": {
+        "name": "realtime",
+        "type": "lib",
+        "data": {
+          "root": "packages/realtime",
+          "targets": {
+            "oxlint": {
+              "executor": "@nx/oxlint:lint",
+              "cache": true,
+              "inputs": [
+                {
+                  "fileset": "{projectRoot}/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue,svelte,astro}"
+                },
+                {
+                  "fileset": "{projectRoot}/**/{.oxlintrc.json,.oxlintrc.jsonc,oxlint.config.ts,oxlint.config.mts,.eslintignore,.gitignore,tsconfig*.json}"
+                },
+                "{workspaceRoot}/.oxlintrc.json",
+                "{workspaceRoot}/packages/.eslintignore",
+                "{workspaceRoot}/packages/.gitignore",
+                "{workspaceRoot}/.eslintignore",
+                "{workspaceRoot}/.gitignore",
+                {
+                  "externalDependencies": [
+                    "oxlint"
+                  ]
+                }
+              ],
+              "metadata": {
+                "technologies": [
+                  "oxlint"
+                ],
+                "description": "Runs Oxlint on project",
+                "help": {
+                  "command": "pnpm exec oxlint --help",
+                  "example": {
+                    "options": {
+                      "max-warnings": 0
+                    }
+                  }
+                }
+              },
+              "configurations": {},
+              "options": {},
+              "parallelism": true
+            },
+            "eslint:lint": {
+              "cache": true,
+              "inputs": [
+                "default",
+                "^default",
+                "{workspaceRoot}/eslint.config.mjs",
+                "{workspaceRoot}/tools/eslint-rules/**/*",
+                {
+                  "externalDependencies": [
+                    "eslint"
+                  ]
+                }
+              ],
+              "outputs": [
+                "{options.cwd ?? .}/{options.o ?? options.output-file}"
+              ],
+              "metadata": {
+                "technologies": [
+                  "eslint"
+                ],
+                "description": "Runs ESLint on project",
+                "help": {
+                  "command": "pnpm exec eslint --help",
+                  "example": {
+                    "options": {
+                      "max-warnings": 0
+                    }
+                  }
+                }
+              },
+              "executor": "nx:run-commands",
+              "options": {
+                "cwd": "packages/realtime",
+                "command": "eslint ."
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "build": {
+              "dependsOn": [
+                "^build"
+              ],
+              "cache": true,
+              "executor": "@nx/js:tsc",
+              "outputs": [
+                "{options.outputPath}"
+              ],
+              "options": {
+                "outputPath": "dist/packages/realtime",
+                "main": "packages/realtime/src/index.ts",
+                "tsConfig": "packages/realtime/tsconfig.json"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "nx-release-publish": {
+              "executor": "@nx/js:release-publish",
+              "dependsOn": [
+                "^nx-release-publish"
+              ],
+              "options": {},
+              "configurations": {},
+              "parallelism": true
+            }
+          },
+          "name": "realtime",
+          "tags": [
+            "npm:public",
+            "scope:realtime",
+            "type:data-access"
+          ],
+          "metadata": {
+            "targetGroups": {},
+            "js": {
+              "packageName": "@monorepo/realtime",
+              "packageVersion": "0.0.1",
+              "packageExports": {
+                ".": "./src/index.ts"
+              },
+              "packageMain": "./src/index.ts",
+              "isInPackageManagerWorkspaces": true
+            }
+          },
+          "sourceRoot": "packages/realtime/src",
+          "projectType": "library",
+          "implicitDependencies": []
+        }
+      },
+      "@monorepo/shared": {
+        "name": "@monorepo/shared",
+        "type": "lib",
+        "data": {
+          "root": "packages/shared",
+          "name": "@monorepo/shared",
+          "tags": [
+            "npm:public"
+          ],
+          "metadata": {
+            "targetGroups": {},
+            "js": {
+              "packageName": "@monorepo/shared",
+              "packageVersion": "0.0.1",
+              "packageMain": "./index.ts",
+              "isInPackageManagerWorkspaces": true
+            }
+          },
+          "targets": {
+            "nx-release-publish": {
+              "executor": "@nx/js:release-publish",
+              "dependsOn": [
+                "^nx-release-publish"
+              ],
+              "options": {},
+              "configurations": {},
+              "parallelism": true
+            }
+          },
+          "implicitDependencies": []
+        }
+      },
+      "auth": {
+        "name": "auth",
+        "type": "lib",
+        "data": {
+          "root": "packages/auth",
+          "targets": {
+            "oxlint": {
+              "executor": "@nx/oxlint:lint",
+              "cache": true,
+              "inputs": [
+                {
+                  "fileset": "{projectRoot}/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue,svelte,astro}"
+                },
+                {
+                  "fileset": "{projectRoot}/**/{.oxlintrc.json,.oxlintrc.jsonc,oxlint.config.ts,oxlint.config.mts,.eslintignore,.gitignore,tsconfig*.json}"
+                },
+                "{workspaceRoot}/.oxlintrc.json",
+                "{workspaceRoot}/packages/.eslintignore",
+                "{workspaceRoot}/packages/.gitignore",
+                "{workspaceRoot}/.eslintignore",
+                "{workspaceRoot}/.gitignore",
+                {
+                  "externalDependencies": [
+                    "oxlint"
+                  ]
+                }
+              ],
+              "metadata": {
+                "technologies": [
+                  "oxlint"
+                ],
+                "description": "Runs Oxlint on project",
+                "help": {
+                  "command": "pnpm exec oxlint --help",
+                  "example": {
+                    "options": {
+                      "max-warnings": 0
+                    }
+                  }
+                }
+              },
+              "configurations": {},
+              "options": {},
+              "parallelism": true
+            },
+            "eslint:lint": {
+              "cache": true,
+              "inputs": [
+                "default",
+                "^default",
+                "{workspaceRoot}/eslint.config.mjs",
+                "{workspaceRoot}/tools/eslint-rules/**/*",
+                {
+                  "externalDependencies": [
+                    "eslint"
+                  ]
+                }
+              ],
+              "outputs": [
+                "{options.cwd ?? .}/{options.o ?? options.output-file}"
+              ],
+              "metadata": {
+                "technologies": [
+                  "eslint"
+                ],
+                "description": "Runs ESLint on project",
+                "help": {
+                  "command": "pnpm exec eslint --help",
+                  "example": {
+                    "options": {
+                      "max-warnings": 0
+                    }
+                  }
+                }
+              },
+              "executor": "nx:run-commands",
+              "options": {
+                "cwd": "packages/auth",
+                "command": "eslint ."
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "build": {
+              "dependsOn": [
+                "^build"
+              ],
+              "cache": true,
+              "executor": "@nx/js:tsc",
+              "outputs": [
+                "{options.outputPath}"
+              ],
+              "options": {
+                "outputPath": "dist/packages/auth",
+                "main": "packages/auth/src/index.ts",
+                "tsConfig": "packages/auth/tsconfig.json"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "nx-release-publish": {
+              "executor": "@nx/js:release-publish",
+              "dependsOn": [
+                "^nx-release-publish"
+              ],
+              "options": {},
+              "configurations": {},
+              "parallelism": true
+            }
+          },
+          "name": "auth",
+          "tags": [
+            "npm:public",
+            "scope:auth",
+            "type:shared"
+          ],
+          "metadata": {
+            "targetGroups": {},
+            "js": {
+              "packageName": "@monorepo/auth",
+              "packageVersion": "0.0.1",
+              "packageExports": {
+                ".": "./src/index.ts"
+              },
+              "packageMain": "./src/index.ts",
+              "isInPackageManagerWorkspaces": true
+            }
+          },
+          "sourceRoot": "packages/auth/src",
+          "projectType": "library",
+          "implicitDependencies": []
+        }
+      },
+      "api": {
+        "name": "api",
+        "type": "app",
+        "data": {
+          "root": "apps/api",
+          "targets": {
+            "oxlint": {
+              "executor": "@nx/oxlint:lint",
+              "cache": true,
+              "inputs": [
+                {
+                  "fileset": "{projectRoot}/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue,svelte,astro}"
+                },
+                {
+                  "fileset": "{projectRoot}/**/{.oxlintrc.json,.oxlintrc.jsonc,oxlint.config.ts,oxlint.config.mts,.eslintignore,.gitignore,tsconfig*.json}"
+                },
+                "{workspaceRoot}/.oxlintrc.json",
+                "{workspaceRoot}/apps/api/.oxlintrc.json",
+                "{workspaceRoot}/apps/.eslintignore",
+                "{workspaceRoot}/apps/.gitignore",
+                "{workspaceRoot}/.eslintignore",
+                "{workspaceRoot}/.gitignore",
+                {
+                  "externalDependencies": [
+                    "oxlint"
+                  ]
+                }
+              ],
+              "metadata": {
+                "technologies": [
+                  "oxlint"
+                ],
+                "description": "Runs Oxlint on project",
+                "help": {
+                  "command": "pnpm exec oxlint --help",
+                  "example": {
+                    "options": {
+                      "max-warnings": 0
+                    }
+                  }
+                }
+              },
+              "configurations": {},
+              "options": {},
+              "parallelism": true
+            },
+            "eslint:lint": {
+              "cache": true,
+              "inputs": [
+                "default",
+                "^default",
+                "{workspaceRoot}/eslint.config.mjs",
+                "{workspaceRoot}/tools/eslint-rules/**/*",
+                {
+                  "externalDependencies": [
+                    "eslint"
+                  ]
+                }
+              ],
+              "outputs": [
+                "{options.cwd ?? .}/{options.o ?? options.output-file}"
+              ],
+              "metadata": {
+                "technologies": [
+                  "eslint"
+                ],
+                "description": "Runs ESLint on project",
+                "help": {
+                  "command": "pnpm exec eslint --help",
+                  "example": {
+                    "options": {
+                      "max-warnings": 0
+                    }
+                  }
+                }
+              },
+              "executor": "nx:run-commands",
+              "options": {
+                "cwd": "apps/api",
+                "command": "eslint ."
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "build": {
+              "dependsOn": [
+                "^build"
+              ],
+              "cache": true,
+              "executor": "nx:run-commands",
+              "options": {
+                "command": "nest build",
+                "cwd": "apps/api"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "lint": {
+              "cache": true,
+              "executor": "nx:run-commands",
+              "options": {
+                "command": "oxlint --type-aware src/ test/",
+                "cwd": "apps/api"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "test": {
+              "cache": true,
+              "executor": "nx:run-commands",
+              "options": {
+                "command": "vitest run",
+                "cwd": "apps/api"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "deploy": {
+              "executor": "nx:run-script",
+              "metadata": {
+                "scriptContent": "nest deploy",
+                "runCommand": "pnpm run deploy"
+              },
+              "options": {
+                "script": "deploy"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "format": {
+              "executor": "nx:run-script",
+              "metadata": {
+                "scriptContent": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+                "runCommand": "pnpm run format"
+              },
+              "options": {
+                "script": "format"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "start": {
+              "executor": "nx:run-script",
+              "metadata": {
+                "scriptContent": "nest start",
+                "runCommand": "pnpm run start"
+              },
+              "options": {
+                "script": "start"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "start:dev": {
+              "executor": "nx:run-script",
+              "metadata": {
+                "scriptContent": "nest start --watch",
+                "runCommand": "pnpm run start:dev"
+              },
+              "options": {
+                "script": "start:dev"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "start:debug": {
+              "executor": "nx:run-script",
+              "metadata": {
+                "scriptContent": "nest start --debug --watch",
+                "runCommand": "pnpm run start:debug"
+              },
+              "options": {
+                "script": "start:debug"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "start:prod": {
+              "executor": "nx:run-script",
+              "metadata": {
+                "scriptContent": "node dist/main",
+                "runCommand": "pnpm run start:prod"
+              },
+              "options": {
+                "script": "start:prod"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "test:watch": {
+              "executor": "nx:run-script",
+              "metadata": {
+                "scriptContent": "vitest",
+                "runCommand": "pnpm run test:watch"
+              },
+              "options": {
+                "script": "test:watch"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "test:cov": {
+              "executor": "nx:run-script",
+              "metadata": {
+                "scriptContent": "vitest run --coverage",
+                "runCommand": "pnpm run test:cov"
+              },
+              "options": {
+                "script": "test:cov"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "test:debug": {
+              "executor": "nx:run-script",
+              "metadata": {
+                "scriptContent": "vitest --inspect-brk --no-file-parallelism",
+                "runCommand": "pnpm run test:debug"
+              },
+              "options": {
+                "script": "test:debug"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "test:e2e": {
+              "executor": "nx:run-script",
+              "metadata": {
+                "scriptContent": "vitest run --config ./vitest.config.e2e.ts",
+                "runCommand": "pnpm run test:e2e"
+              },
+              "options": {
+                "script": "test:e2e"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "serve": {
+              "executor": "nx:run-commands",
+              "options": {
+                "command": "nest start --watch",
+                "cwd": "apps/api"
+              },
+              "configurations": {},
+              "parallelism": true
+            }
+          },
+          "name": "api",
+          "tags": [
+            "npm:private",
+            "scope:api",
+            "type:app"
+          ],
+          "metadata": {
+            "targetGroups": {
+              "NPM Scripts": [
+                "deploy",
+                "format",
+                "start",
+                "start:dev",
+                "start:debug",
+                "start:prod",
+                "test:watch",
+                "test:cov",
+                "test:debug",
+                "test:e2e"
+              ]
+            },
+            "description": "",
+            "js": {
+              "packageName": "api",
+              "packageVersion": "0.0.1",
+              "isInPackageManagerWorkspaces": true
+            }
+          },
+          "sourceRoot": "apps/api/src",
+          "projectType": "application",
+          "implicitDependencies": []
+        }
+      },
+      "web": {
+        "name": "web",
+        "type": "app",
+        "data": {
+          "root": "apps/web",
+          "targets": {
+            "oxlint": {
+              "executor": "@nx/oxlint:lint",
+              "cache": true,
+              "inputs": [
+                {
+                  "fileset": "{projectRoot}/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue,svelte,astro}"
+                },
+                {
+                  "fileset": "{projectRoot}/**/{.oxlintrc.json,.oxlintrc.jsonc,oxlint.config.ts,oxlint.config.mts,.eslintignore,.gitignore,tsconfig*.json}"
+                },
+                "{workspaceRoot}/.oxlintrc.json",
+                "{workspaceRoot}/apps/.eslintignore",
+                "{workspaceRoot}/apps/.gitignore",
+                "{workspaceRoot}/.eslintignore",
+                "{workspaceRoot}/.gitignore",
+                {
+                  "externalDependencies": [
+                    "oxlint"
+                  ]
+                }
+              ],
+              "metadata": {
+                "technologies": [
+                  "oxlint"
+                ],
+                "description": "Runs Oxlint on project",
+                "help": {
+                  "command": "pnpm exec oxlint --help",
+                  "example": {
+                    "options": {
+                      "max-warnings": 0
+                    }
+                  }
+                }
+              },
+              "configurations": {},
+              "options": {},
+              "parallelism": true
+            },
+            "eslint:lint": {
+              "cache": true,
+              "inputs": [
+                "default",
+                "^default",
+                "{workspaceRoot}/eslint.config.mjs",
+                "{workspaceRoot}/apps/web/eslint.config.mjs",
+                "{workspaceRoot}/tools/eslint-rules/**/*",
+                {
+                  "externalDependencies": [
+                    "eslint"
+                  ]
+                }
+              ],
+              "outputs": [
+                "{options.cwd ?? .}/{options.o ?? options.output-file}"
+              ],
+              "metadata": {
+                "technologies": [
+                  "eslint"
+                ],
+                "description": "Runs ESLint on project",
+                "help": {
+                  "command": "pnpm exec eslint --help",
+                  "example": {
+                    "options": {
+                      "max-warnings": 0
+                    }
+                  }
+                }
+              },
+              "executor": "nx:run-commands",
+              "options": {
+                "cwd": "apps/web",
+                "command": "eslint ."
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "next:build": {
+              "dependsOn": [
+                "^build"
+              ],
+              "cache": true,
+              "inputs": [
+                "default",
+                "^default",
+                {
+                  "externalDependencies": [
+                    "next"
+                  ]
+                },
+                {
+                  "dependentTasksOutputFiles": "**/*.d.ts",
+                  "transitive": true
+                }
+              ],
+              "outputs": [
+                "{workspaceRoot}/apps/web/.next/!(cache)/**/*",
+                "{workspaceRoot}/apps/web/.next/!(cache)"
+              ],
+              "executor": "nx:run-commands",
+              "options": {
+                "cwd": "apps/web",
+                "tty": false,
+                "command": "next build"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "next:dev": {
+              "continuous": true,
+              "inputs": [
+                "default",
+                "^default",
+                {
+                  "externalDependencies": [
+                    "next"
+                  ]
+                },
+                {
+                  "dependentTasksOutputFiles": "**/*.d.ts",
+                  "transitive": true
+                }
+              ],
+              "readyWhen": {
+                "command": "node -e \"require('@nx/next/ready-check').waitForDevServer()\"",
+                "interval": 1000
+              },
+              "executor": "nx:run-commands",
+              "options": {
+                "cwd": "apps/web",
+                "command": "next dev"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "next:start": {
+              "continuous": true,
+              "dependsOn": [
+                "next:build"
+              ],
+              "inputs": [
+                "default",
+                "^default",
+                {
+                  "externalDependencies": [
+                    "next"
+                  ]
+                },
+                {
+                  "dependentTasksOutputFiles": "**/*.d.ts",
+                  "transitive": true
+                }
+              ],
+              "readyWhen": {
+                "command": "node -e \"require('@nx/next/ready-check').waitForDevServer()\"",
+                "interval": 1000
+              },
+              "executor": "nx:run-commands",
+              "options": {
+                "cwd": "apps/web",
+                "command": "next start"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "serve-static": {
+              "continuous": true,
+              "dependsOn": [
+                "next:build"
+              ],
+              "inputs": [
+                "default",
+                "^default",
+                {
+                  "externalDependencies": [
+                    "next"
+                  ]
+                },
+                {
+                  "dependentTasksOutputFiles": "**/*.d.ts",
+                  "transitive": true
+                }
+              ],
+              "readyWhen": {
+                "command": "node -e \"require('@nx/next/ready-check').waitForDevServer()\"",
+                "interval": 1000
+              },
+              "executor": "nx:run-commands",
+              "options": {
+                "cwd": "apps/web",
+                "command": "next start"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "build-deps": {
+              "dependsOn": [
+                "^build"
+              ],
+              "configurations": {},
+              "options": {},
+              "parallelism": true,
+              "executor": "nx:noop"
+            },
+            "watch-deps": {
+              "continuous": true,
+              "dependsOn": [
+                "build-deps"
+              ],
+              "executor": "nx:run-commands",
+              "options": {
+                "command": "pnpm exec nx watch --projects web --includeDependencies -- pnpm exec nx build-deps web"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "build": {
+              "dependsOn": [
+                "^build"
+              ],
+              "cache": true,
+              "executor": "nx:run-commands",
+              "options": {
+                "command": "next build",
+                "cwd": "apps/web"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "lint": {
+              "cache": true,
+              "executor": "nx:run-commands",
+              "options": {
+                "command": "eslint",
+                "cwd": "apps/web"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "dev": {
+              "executor": "nx:run-script",
+              "metadata": {
+                "scriptContent": "nx next:dev",
+                "runCommand": "pnpm run dev"
+              },
+              "options": {
+                "script": "dev"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "start": {
+              "executor": "nx:run-script",
+              "metadata": {
+                "scriptContent": "nx next:start",
+                "runCommand": "pnpm run start"
+              },
+              "options": {
+                "script": "start"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "serve": {
+              "executor": "nx:run-commands",
+              "options": {
+                "command": "next dev",
+                "cwd": "apps/web"
+              },
+              "configurations": {},
+              "parallelism": true
+            }
+          },
+          "name": "web",
+          "tags": [
+            "npm:private",
+            "scope:web",
+            "type:app"
+          ],
+          "metadata": {
+            "targetGroups": {
+              "NPM Scripts": [
+                "dev",
+                "start"
+              ]
+            },
+            "js": {
+              "packageName": "web",
+              "packageVersion": "0.1.0",
+              "isInPackageManagerWorkspaces": true
+            }
+          },
+          "sourceRoot": "apps/web/src",
+          "projectType": "application",
+          "implicitDependencies": []
+        }
+      }
+    },
+    "dependencies": {
+      "graphql-contracts": [],
+      "apollo-client": [],
+      "apollo-server": [],
+      "design-system": [],
+      "ai-helper": [],
+      "realtime": [],
+      "@monorepo/shared": [],
+      "auth": [],
+      "api": [
+        {
+          "source": "api",
+          "target": "ai-helper",
+          "type": "static"
+        },
+        {
+          "source": "api",
+          "target": "apollo-server",
+          "type": "static"
+        },
+        {
+          "source": "api",
+          "target": "auth",
+          "type": "static"
+        },
+        {
+          "source": "api",
+          "target": "graphql-contracts",
+          "type": "static"
+        },
+        {
+          "source": "api",
+          "target": "realtime",
+          "type": "static"
+        }
+      ],
+      "web": [
+        {
+          "source": "web",
+          "target": "apollo-client",
+          "type": "static"
+        },
+        {
+          "source": "web",
+          "target": "auth",
+          "type": "static"
+        },
+        {
+          "source": "web",
+          "target": "design-system",
+          "type": "static"
+        },
+        {
+          "source": "web",
+          "target": "graphql-contracts",
+          "type": "static"
+        }
+      ]
+    }
+  }
+}

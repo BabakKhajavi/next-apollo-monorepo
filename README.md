@@ -67,3 +67,19 @@ next-apollo-monorepo/
 
 
 ```
+
+## Useful Commands
+
+```
+pnpm run graph            # visualize full project dependency graph
+pnpm run show:web         # inspect web's targets/deps
+pnpm run show:api         # inspect api's targets/deps
+pnpm run affected:build   # build only projects changed vs. base branch
+pnpm run affected:test    # test only affected projects
+pnpm run affected:lint    # lint only affected projects
+pnpm run affected:graph   # visualize only the affected projects vs. base branch
+pnpm run affected:list    # plain text list of affected project names
+pnpm run reset            # clear Nx cache/daemon when something looks stale
+```
+
+See [COMMANDS.md](COMMANDS.md) for the full chronological setup log.

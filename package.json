@@ -6,7 +6,16 @@
   "scripts": {
     "build": "nx run-many -t build",
     "test": "nx run-many -t test",
-    "lint": "nx run-many -t lint"
+    "lint": "nx run-many -t lint",
+    "graph": "nx graph",
+    "show:web": "nx show project web --web",
+    "show:api": "nx show project api --web",
+    "affected:build": "nx affected -t build",
+    "affected:test": "nx affected -t test",
+    "affected:lint": "nx affected -t lint",
+    "affected:graph": "nx graph --affected",
+    "affected:list": "nx show projects --affected",
+    "reset": "nx reset"
   },
   "devDependencies": {
     "@nx/eslint": "24.0.5",

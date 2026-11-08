@@ -22,3 +22,10 @@
 
 
 <!-- nx configuration end-->
+
+## Project Documentation Policy
+
+- Any structural or setup change (new app/package, new dependency, new generator run, config change) must update **both**:
+  - `README.md` — current state of the repo structure/architecture
+  - `COMMANDS.md` — append the exact command(s) run plus a one-line "why", in chronological order
+- Do this in the same turn as the change, not as a follow-up.

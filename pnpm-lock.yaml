@@ -39,6 +39,21 @@ importers:
 
   apps/api:
     dependencies:
+      '@monorepo/ai-helper':
+        specifier: workspace:*
+        version: link:../../packages/ai-helper
+      '@monorepo/apollo-server':
+        specifier: workspace:*
+        version: link:../../packages/apollo-server
+      '@monorepo/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
+      '@monorepo/graphql-contracts':
+        specifier: workspace:*
+        version: link:../../packages/graphql-contracts
+      '@monorepo/realtime':
+        specifier: workspace:*
+        version: link:../../packages/realtime
       '@nestjs/common':
         specifier: ^12.0.1
         version: 12.4.0(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -106,6 +121,18 @@ importers:
 
   apps/web:
     dependencies:
+      '@monorepo/apollo-client':
+        specifier: workspace:*
+        version: link:../../packages/apollo-client
+      '@monorepo/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
+      '@monorepo/design-system':
+        specifier: workspace:*
+        version: link:../../packages/design-system
+      '@monorepo/graphql-contracts':
+        specifier: workspace:*
+        version: link:../../packages/graphql-contracts
       next:
         specifier: 16.4.5
         version: 16.4.5(@babel/core@7.29.13)(@types/node@20.19.43)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
