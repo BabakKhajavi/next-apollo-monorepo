@@ -1,0 +1,15 @@
+{
+  "name": "next-apollo-monorepo",
+  "version": "0.0.1",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "build": "nx run-many -t build",
+    "test": "nx run-many -t test",
+    "lint": "nx run-many -t lint"
+  },
+  "devDependencies": {
+    "nx": "^20.0.0",
+    "typescript": "^5.6.0"
+  }
+}

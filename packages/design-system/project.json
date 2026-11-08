@@ -1,0 +1,23 @@
+{
+  "name": "design-system",
+  "sourceRoot": "packages/design-system/src",
+  "projectType": "library",
+  "tags": ["scope:design-system", "type:ui"],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/packages/design-system",
+        "main": "packages/design-system/src/index.ts",
+        "tsConfig": "packages/design-system/tsconfig.json"
+      }
+    },
+    "storybook": {
+      "executor": "@nx/storybook:storybook",
+      "options": {
+        "configDir": "packages/design-system/.storybook"
+      }
+    }
+  }
+}

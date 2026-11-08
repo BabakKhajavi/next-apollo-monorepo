@@ -1,0 +1,17 @@
+{
+  "name": "ai-helper",
+  "sourceRoot": "packages/ai-helper/src",
+  "projectType": "library",
+  "tags": ["scope:ai-helper", "type:data-access", "platform:backend"],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/packages/ai-helper",
+        "main": "packages/ai-helper/src/index.ts",
+        "tsConfig": "packages/ai-helper/tsconfig.json"
+      }
+    }
+  }
+}

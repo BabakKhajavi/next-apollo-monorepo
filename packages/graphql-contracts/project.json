@@ -1,0 +1,23 @@
+{
+  "name": "graphql-contracts",
+  "sourceRoot": "packages/graphql-contracts/src",
+  "projectType": "library",
+  "tags": ["scope:graphql-contracts", "type:shared"],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/packages/graphql-contracts",
+        "main": "packages/graphql-contracts/src/index.ts",
+        "tsConfig": "packages/graphql-contracts/tsconfig.json"
+      }
+    },
+    "codegen": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "graphql-codegen --config packages/graphql-contracts/codegen.yml"
+      }
+    }
+  }
+}

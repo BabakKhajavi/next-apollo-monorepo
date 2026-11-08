@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM"],
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "composite": false,
+    "baseUrl": ".",
+    "paths": {
+      "@monorepo/design-system": ["packages/design-system/src/index.ts"],
+      "@monorepo/apollo-client": ["packages/apollo-client/src/index.ts"],
+      "@monorepo/apollo-server": ["packages/apollo-server/src/index.ts"],
+      "@monorepo/graphql-contracts": ["packages/graphql-contracts/src/index.ts"],
+      "@monorepo/ai-helper": ["packages/ai-helper/src/index.ts"],
+      "@monorepo/realtime": ["packages/realtime/src/index.ts"],
+      "@monorepo/auth": ["packages/auth/src/index.ts"],
+      "@monorepo/shared/*": ["packages/shared/*"]
+    }
+  }
+}

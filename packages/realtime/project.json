@@ -1,0 +1,17 @@
+{
+  "name": "realtime",
+  "sourceRoot": "packages/realtime/src",
+  "projectType": "library",
+  "tags": ["scope:realtime", "type:data-access"],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/packages/realtime",
+        "main": "packages/realtime/src/index.ts",
+        "tsConfig": "packages/realtime/tsconfig.json"
+      }
+    }
+  }
+}

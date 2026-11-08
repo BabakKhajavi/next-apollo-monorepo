@@ -1,0 +1,17 @@
+{
+  "name": "apollo-client",
+  "sourceRoot": "packages/apollo-client/src",
+  "projectType": "library",
+  "tags": ["scope:apollo-client", "type:data-access", "platform:frontend"],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/packages/apollo-client",
+        "main": "packages/apollo-client/src/index.ts",
+        "tsConfig": "packages/apollo-client/tsconfig.json"
+      }
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "apollo-server",
+  "sourceRoot": "packages/apollo-server/src",
+  "projectType": "library",
+  "tags": ["scope:apollo-server", "type:data-access", "platform:backend"],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/packages/apollo-server",
+        "main": "packages/apollo-server/src/index.ts",
+        "tsConfig": "packages/apollo-server/tsconfig.json"
+      }
+    }
+  }
+}

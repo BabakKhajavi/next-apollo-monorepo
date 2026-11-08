@@ -1,0 +1,12 @@
+node_modules
+dist
+.nx/cache
+.nx/workspace-data
+.next
+out
+cdk.out
+coverage
+*.log
+.env
+.env.*
+.DS_Store
