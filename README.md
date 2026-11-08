@@ -1,3 +1,17 @@
+## Enterprise Next.js + NestJS + Apollo Monorepo
+
+Technology: Nx + pnpm + Next.js + NestJS + Apollo GraphQL + LangChain + AWS
+
+This structure incorporates our agreed architectural decisions:
+
+- One Next.js application and one NestJS API.
+- Application-specific features remain inside their applications.
+- Reusable packages are independently managed and npm-ready.
+- Atomic Design and Storybook live together.
+- Apollo Client and Server are separate packages.
+- AppSync Events handles real-time communication.
+
+```
 next-apollo-monorepo/
 │
 ├── apps/
@@ -199,3 +213,24 @@ next-apollo-monorepo/
 ├── .npmrc
 ├── .gitignore
 └── package.json
+
+
+
+                      Nx + pnpm Monorepo
+                              │
+             ┌────────────────┴────────────────┐
+             │                                 │
+         Applications                       Packages
+             │                                 │
+       ┌─────┴─────┐          ┌────────────────┼────────────────┐
+       │           │          │                │                │
+    Next.js      NestJS    Design System    Apollo Client    AI Helper
+       │           │          │                │                │
+    Features    Modules    Storybook      GraphQL Cache     LangChain
+       │           │                           │                │
+       └─────┬─────┘                           │                │
+             │                                 │                │
+             └──────────── Shared Contracts ───┴────────────────┘
+
+
+```

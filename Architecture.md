@@ -1,3 +1,4 @@
+```
 next-apollo-monorepo/
 │
 ├── apps/
@@ -215,6 +216,7 @@ next-apollo-monorepo/
        └─────┬─────┘                           │                │
              │                                 │                │
              └──────────── Shared Contracts ───┴────────────────┘
+```
 
 ## Enterprise Next.js + NestJS + Apollo Monorepo
 
