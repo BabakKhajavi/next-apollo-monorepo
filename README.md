@@ -80,6 +80,10 @@ pnpm run affected:lint    # lint only affected projects
 pnpm run affected:graph   # visualize only the affected projects vs. base branch
 pnpm run affected:list    # plain text list of affected project names
 pnpm run reset            # clear Nx cache/daemon when something looks stale
+pnpm run release:dry      # preview version bumps/changelogs, no writes
+pnpm run release          # bump versions, write changelogs, commit + tag (conventional commits, independent per-project)
 ```
+
+Versioning is **never automatic per commit** — it only runs when triggered. CI release (`.github/workflows/release.yml`) fires on manual `workflow_dispatch` or a push to `release/**`, not on every merge to `main`, so version tags stay frozen during normal development and only move at an explicit promotion point.
 
 See [COMMANDS.md](COMMANDS.md) for the full chronological setup log.

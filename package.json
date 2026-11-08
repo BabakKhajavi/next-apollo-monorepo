@@ -15,7 +15,9 @@
     "affected:lint": "nx affected -t lint",
     "affected:graph": "nx graph --affected",
     "affected:list": "nx show projects --affected",
-    "reset": "nx reset"
+    "reset": "nx reset",
+    "release:dry": "nx release --dry-run",
+    "release": "nx release"
   },
   "devDependencies": {
     "@nx/eslint": "24.0.5",

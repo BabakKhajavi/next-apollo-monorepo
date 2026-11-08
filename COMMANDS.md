@@ -97,3 +97,35 @@ Useful before `affected:build`/`affected:test` to sanity-check scope first.
 ```
 nx graph --affected
 ```
+
+## 15. Set up versioning with Nx Release
+Added `release` block to `nx.json`:
+```json
+"release": {
+  "projectsRelationship": "independent",
+  "version": { "conventionalCommits": true },
+  "changelog": { "projectChangelogs": true, "workspaceChangelog": false },
+  "git": { "commit": true, "tag": true }
+}
+```
+- **Independent** versioning — each package/app bumps on its own, only when it actually changes (not lockstep across the whole workspace).
+- **Conventional commits** drive the bump — `fix:` → patch, `feat:` → minor, `feat!:`/`BREAKING CHANGE:` → major, scoped to the commits touching each project.
+- Per-project `CHANGELOG.md` generated, no single workspace-wide changelog.
+- Commits the version bump + changelog and tags the release in git automatically.
+
+Added scripts to root `package.json`:
+- `release:dry` → `nx release --dry-run` — preview what would bump/change, no writes
+- `release` → `nx release` — actually bump versions, write changelogs, commit, tag
+
+Requires real commit history with conventional-commit messages (`feat:`, `fix:`, etc.) to compute bumps correctly — always run `release:dry` first to sanity-check before `release`.
+
+Note: `nx release` is never invoked automatically — versions stay frozen through however many commits happen in between. It only bumps when explicitly run, and at that point reads every commit since the last release tag per project, picking one bump from all of them (not one bump per commit).
+
+## 16. Add dedicated release workflow (CI-triggered, not per-commit)
+Created `.github/workflows/release.yml`:
+- Triggers: `workflow_dispatch` (manual button in GitHub Actions UI) or push to a `release/**` branch — deliberately NOT on every push/merge to `main`, so versions stay frozen during normal development.
+- `fetch-depth: 0` on checkout — needed so conventional-commits analysis can see full tag history.
+- Configures a bot git identity so `nx release`'s auto-commit/tag has an author.
+- Runs `pnpm nx release --yes` (non-interactive) to bump, changelog, commit, and tag.
+
+This is the actual promotion point — run this workflow when moving a batch of work to sandbox/release, not on every merge.

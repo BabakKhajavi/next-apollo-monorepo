@@ -25,6 +25,20 @@
     "sharedGlobals": []
   },
   "analytics": false,
+  "release": {
+    "projectsRelationship": "independent",
+    "version": {
+      "conventionalCommits": true
+    },
+    "changelog": {
+      "projectChangelogs": true,
+      "workspaceChangelog": false
+    },
+    "git": {
+      "commit": true,
+      "tag": true
+    }
+  },
   "plugins": [
     {
       "plugin": "@nx/oxlint",
