@@ -71,6 +71,9 @@ next-apollo-monorepo/
 ## Useful Commands
 
 ```
+pnpm run dev:web          # run web dev server alone (separate terminal)
+pnpm run dev:api          # run api dev server alone (separate terminal)
+pnpm run preview:web      # production build + next start, for real Core Web Vitals testing
 pnpm run graph            # visualize full project dependency graph
 pnpm run show:web         # inspect web's targets/deps
 pnpm run show:api         # inspect api's targets/deps

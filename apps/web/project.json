@@ -18,6 +18,14 @@
         "cwd": "apps/web"
       }
     },
+    "preview": {
+      "dependsOn": ["build"],
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "next start",
+        "cwd": "apps/web"
+      }
+    },
     "lint": {
       "executor": "nx:run-commands",
       "options": {

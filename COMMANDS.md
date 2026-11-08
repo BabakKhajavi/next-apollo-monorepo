@@ -129,3 +129,23 @@ Created `.github/workflows/release.yml`:
 - Runs `pnpm nx release --yes` (non-interactive) to bump, changelog, commit, and tag.
 
 This is the actual promotion point — run this workflow when moving a batch of work to sandbox/release, not on every merge.
+
+## 17. Add independent dev-server scripts for web/api
+Added to root `package.json`:
+- `dev:web` → `nx serve web` — runs `next dev` for the web app only
+- `dev:api` → `nx serve api` — runs `nest start --watch` for the api app only
+
+Run each in its own terminal (`pnpm run dev:web` in one tab, `pnpm run dev:api` in another) so they run independently instead of combined under `run-many`.
+
+## 18. Add production preview target for web (Core Web Vitals testing)
+Added `preview` target to `apps/web/project.json`:
+```json
+"preview": {
+  "dependsOn": ["build"],
+  "executor": "nx:run-commands",
+  "options": { "command": "next start", "cwd": "apps/web" }
+}
+```
+Dev mode (`next dev`) skips production optimizations (minification, RSC payload shaping, etc.), so it gives misleading Core Web Vitals numbers. `preview` uses Nx's own task graph (`dependsOn: ["build"]`) to run a real production build first — cached if unchanged — then serves it with `next start`.
+
+Added root script: `preview:web` → `nx run web:preview`.

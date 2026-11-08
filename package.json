@@ -4,6 +4,9 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
+    "dev:web": "nx serve web",
+    "dev:api": "nx serve api",
+    "preview:web": "nx run web:preview",
     "build": "nx run-many -t build",
     "test": "nx run-many -t test",
     "lint": "nx run-many -t lint",
