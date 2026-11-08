@@ -89,4 +89,8 @@ pnpm run release          # bump versions, write changelogs, commit + tag (conve
 
 Versioning is **never automatic per commit** — it only runs when triggered. CI release (`.github/workflows/release.yml`) fires on manual `workflow_dispatch` or a push to `release/**`, not on every merge to `main`, so version tags stay frozen during normal development and only move at an explicit promotion point.
 
+## Skills
+
+- `apollo-client` (`.agents/skills/apollo-client`) — Apollo's official best-practices skill, installed via `npx skills add apollographql/skills --skill apollo-client`. Loaded automatically when working with Apollo Client code.
+
 See [COMMANDS.md](COMMANDS.md) for the full chronological setup log.

@@ -149,3 +149,9 @@ Added `preview` target to `apps/web/project.json`:
 Dev mode (`next dev`) skips production optimizations (minification, RSC payload shaping, etc.), so it gives misleading Core Web Vitals numbers. `preview` uses Nx's own task graph (`dependsOn: ["build"]`) to run a real production build first — cached if unchanged — then serves it with `next start`.
 
 Added root script: `preview:web` → `nx run web:preview`.
+
+## 19. Install Apollo Client skill
+```
+npx skills add apollographql/skills --skill apollo-client
+```
+Installs Apollo's official best-practices skill from `apollographql/skills` into `.agents/skills/apollo-client`, symlinked to `.claude/skills/apollo-client` for Claude Code. Teaches Claude Apollo Client conventions (caching, fragments, hooks, error handling) when working in `packages/apollo-client` or any `apps/*/src/**/graphql`.
