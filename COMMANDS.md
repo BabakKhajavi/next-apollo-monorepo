@@ -155,3 +155,23 @@ Added root script: `preview:web` → `nx run web:preview`.
 npx skills add apollographql/skills --skill apollo-client
 ```
 Installs Apollo's official best-practices skill from `apollographql/skills` into `.agents/skills/apollo-client`, symlinked to `.claude/skills/apollo-client` for Claude Code. Teaches Claude Apollo Client conventions (caching, fragments, hooks, error handling) when working in `packages/apollo-client` or any `apps/*/src/**/graphql`.
+
+## 20. Implement `packages/apollo-client` + wire into `apps/web`
+
+Full implementation per Apollo's official best-practice skill. Package ships three entry points (`.`, `./providers`, `./nextjs`) so server-only and client-only code never leak into the wrong bundle — isomorphic cache/links core, a `"use client"` `ApolloWrapper`, and an RSC-only `createRSCClient`. `apps/web` wired with `ApolloProvider` in `layout.tsx`, an RSC client singleton (`src/lib/apollo-rsc.ts`), and a temporary demo page (`src/app/(public)/demo`) proving fragment colocation, data masking, Suspense queries, and typed codegen end-to-end against the public Countries API (`https://countries.trevorblades.com/graphql`) — a placeholder until `apps/api` ships a real schema.
+
+Also: disabled `cacheComponents`/`partialPrefetching` in `next.config.ts` (unconfirmed compatibility with Apollo's Next.js RSC integration) and added `transpilePackages` for all `@monorepo/*` deps (Next doesn't transpile workspace TS source by default).
+
+```
+pnpm add "@apollo/client-integration-nextjs@^0.14.0" --filter web --filter apollo-client
+```
+Real published version — my first guess (`^4.0.0`) didn't exist on npm.
+
+```
+pnpm add -D @swc-node/register -w
+```
+Fixed a pre-existing issue surfaced by this work: Nx's project-graph calculation couldn't load any `.ts` config file with type annotations (`next.config.ts`'s `: NextConfig`) — Node's native type-stripping fails on that syntax, and Nx's fallback transpiler (`@swc-node/register` or `ts-node`) wasn't installed to recover. This blocked every `nx` command workspace-wide, not just this task.
+
+`graphql` pinned to `^16.9.0` (down from `^17.0.0`) in both `apps/web` and `packages/apollo-client` — `@graphql-codegen/cli` 6.x's plugins don't yet support graphql 17 (crashed opaquely on `Generate`); Apollo Client 4.3.7 itself supports both `^16` and `^17`, so 16 was the safe common choice.
+
+Pending: `pnpm run preview:web` visual check (continents render, single RSC-prefetched request, no duplicate client refetch) — not yet run.

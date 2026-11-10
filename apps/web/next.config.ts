@@ -2,8 +2,12 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
-  cacheComponents: true,
-  partialPrefetching: true,
+  transpilePackages: [
+    "@monorepo/apollo-client",
+    "@monorepo/design-system",
+    "@monorepo/graphql-contracts",
+    "@monorepo/auth",
+  ],
   turbopack: {
     rules: {
       "*.css": {

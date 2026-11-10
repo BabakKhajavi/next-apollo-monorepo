@@ -6,18 +6,27 @@
     "dev": "nx next:dev",
     "build": "nx next:build",
     "start": "nx next:start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "codegen": "graphql-codegen --config codegen.ts"
   },
   "dependencies": {
+    "@apollo/client": "^4.3.0",
+    "@apollo/client-integration-nextjs": "^0.14.0",
     "@monorepo/apollo-client": "workspace:*",
     "@monorepo/auth": "workspace:*",
     "@monorepo/design-system": "workspace:*",
     "@monorepo/graphql-contracts": "workspace:*",
+    "graphql": "^16.9.0",
     "next": "16.4.5",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "rxjs": "^7.8.0"
   },
   "devDependencies": {
+    "@graphql-codegen/cli": "^6.0.0",
+    "@graphql-codegen/typed-document-node": "^6.0.0",
+    "@graphql-codegen/typescript": "^5.0.0",
+    "@graphql-codegen/typescript-operations": "^5.0.0",
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

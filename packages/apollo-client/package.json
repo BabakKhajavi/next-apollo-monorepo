@@ -4,10 +4,22 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./providers": "./src/providers/index.ts",
+    "./nextjs": "./src/nextjs/index.ts"
   },
   "peerDependencies": {
-    "@apollo/client": "^4.0.0",
-    "react": "^19.0.0"
+    "@apollo/client": "^4.3.0",
+    "@apollo/client-integration-nextjs": "^0.14.0",
+    "graphql": "^16.9.0",
+    "react": "^19.0.0",
+    "rxjs": "^7.8.0"
+  },
+  "devDependencies": {
+    "@apollo/client": "^4.3.0",
+    "@apollo/client-integration-nextjs": "^0.14.0",
+    "graphql": "^16.9.0",
+    "react": "^19.0.0",
+    "rxjs": "^7.8.0"
   }
 }
