@@ -6,7 +6,7 @@ Technology: Nx + pnpm + Next.js + NestJS + Apollo GraphQL + LangChain + AWS
 - Application-specific features remain inside their applications.
 - Reusable packages are independently managed and npm-ready.
 - Atomic Design and Storybook live together.
-- Apollo Client and Server are separate packages.
+- Apollo Client is a separate package; server-side Apollo lives directly in `apps/api` (single consumer, no standalone package).
 - AppSync Events handles real-time communication.
 
 ```
@@ -20,17 +20,20 @@ next-apollo-monorepo/
 │   │       ├── providers/
 │   │       └── lib/
 │   │
-│   └── api/                    # NestJS + Apollo Server
+│   └── api/                    # NestJS + Apollo Server 5 (code-first GraphQL)
 │       └── src/
-│           ├── modules/
-│           ├── common/
-│           └── config/
+│           ├── graphql/        # Resolvers (health.resolver.ts, ...)
+│           ├── app.module.ts   # GraphQLModule.forRoot, autoSchemaFile
+│           ├── main.ts         # Dev entry (Express HTTP listener)
+│           └── lambda.ts       # Prod Lambda entry — bare @apollo/server +
+│                                #   @as-integrations/aws-lambda inline here;
+│                                #   skips Nest's HTTP adapter at request time
 │
 ├── packages/
 │   ├── design-system/          # Atomic Design + Storybook
 │   ├── apollo-client/          # Apollo Client + Next.js SSR
-│   ├── apollo-server/          # Apollo Server utilities
-│   ├── graphql-contracts/      # Shared GraphQL schema/contracts
+│   ├── graphql-contracts/      # Generated schema.graphql + typed operations
+│   │                           #   (GraphQL Code Generator, TypedDocumentNode)
 │   ├── ai-helper/              # LangChain + AI Model Factory
 │   ├── realtime/               # AWS AppSync Events
 │   ├── auth/                   # Shared authentication

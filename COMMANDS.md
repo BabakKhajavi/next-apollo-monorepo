@@ -175,3 +175,38 @@ Fixed a pre-existing issue surfaced by this work: Nx's project-graph calculation
 `graphql` pinned to `^16.9.0` (down from `^17.0.0`) in both `apps/web` and `packages/apollo-client` — `@graphql-codegen/cli` 6.x's plugins don't yet support graphql 17 (crashed opaquely on `Generate`); Apollo Client 4.3.7 itself supports both `^16` and `^17`, so 16 was the safe common choice.
 
 Pending: `pnpm run preview:web` visual check (continents render, single RSC-prefetched request, no duplicate client refetch) — not yet run.
+
+## 21. Phase 1 — NestJS + Apollo Server 5, code-first GraphQL, codegen contracts
+
+Added `@nestjs/graphql` + `@nestjs/apollo` (ApolloDriver) to `apps/api` for dev: `GraphQLModule.forRoot` with `autoSchemaFile` writing `packages/graphql-contracts/schema.graphql` on boot, so codegen can run offline against it in CI without a live server. One resolver (`HealthResolver`, `health: String!`) proves the wiring.
+
+For production Lambda, deliberately did **not** route requests through Nest's HTTP adapter: `apps/api/src/lambda.ts` boots Nest once per warm container via `NestFactory.createApplicationContext` (DI only, no Express), pulls the built `GraphQLSchema` out via `GraphQLSchemaHost`, then hands it to `packages/apollo-server`'s `createLambdaHandler(schema)` — a bare `@apollo/server` instance wrapped by `@as-integrations/aws-lambda`'s `startServerAndCreateLambdaHandler` + `createAPIGatewayProxyEventV2RequestHandler`. Keeps Nest DI/decorators for authoring resolvers, drops Nest's Express middleware from the Lambda hot path. `packages/apollo-server` stays schema-agnostic (takes a `GraphQLSchema` in) so it has no dependency on Nest.
+
+```
+pnpm add @nestjs/apollo @nestjs/graphql @as-integrations/express5 graphql --filter api
+pnpm add -D @types/aws-lambda --filter api
+pnpm add @apollo/server @as-integrations/aws-lambda --filter @monorepo/apollo-server
+pnpm add -D @types/aws-lambda --filter @monorepo/apollo-server
+pnpm add -D @graphql-codegen/cli @graphql-codegen/typescript @graphql-codegen/typescript-operations @graphql-codegen/typed-document-node --filter @monorepo/graphql-contracts
+```
+`@as-integrations/express5` wasn't in the original plan — `@nestjs/apollo`'s `ApolloDriver` needs it at runtime for the dev Express HTTP listener; surfaced as a `PackageLoader` error on first boot, not a build-time error.
+
+Replaced `packages/graphql-contracts`'s placeholder `codegen.yml` target with `codegen.ts` (same plugin config shape as `apps/web/codegen.ts`: `typescript` + `typescript-operations` + `typed-document-node`, `inlineFragmentTypes: "mask"`), schema sourced from the generated `schema.graphql` file, documents from `src/operations/**/*.graphql`. Ran `pnpm nx run graphql-contracts:codegen` once to prove it end-to-end against the real `Health` query.
+
+Verified: `nx build api`, `nx build apollo-server`, `nx build graphql-contracts`, `nx test api`, `nx lint api` all green; `node dist/main.js` + `curl -X POST /graphql -d '{"query":"query { health }"}'` returned `{"data":{"health":"ok"}}`.
+
+Not committed — holding per explicit instruction.
+
+## 22. Remove `packages/apollo-server` — single function, single consumer, not a package
+
+`packages/apollo-server` held exactly one thing: `createLambdaHandler(schema)`, used only by `apps/api/src/lambda.ts`. No second consumer, no shared config, no other responsibility — not enough to justify a standalone package (unlike `graphql-contracts`, which genuinely does several jobs: schema generation target, codegen config, operation docs, generated types). Deleted the package; inlined the `new ApolloServer({ schema })` + `startServerAndCreateLambdaHandler(...)` call directly into `lambda.ts`. `apps/api/package.json` now depends on `@apollo/server` and `@as-integrations/aws-lambda` directly instead of via the removed workspace package. Removed the stale `@monorepo/apollo-server` path entry from `tsconfig.base.json`.
+
+```
+rm -rf packages/apollo-server
+```
+
+Surfaced a real TypeScript issue while inlining: `apps/api`'s `tsconfig.json` uses `"module": "nodenext"`, and under that resolution mode `@apollo/server`'s `ApolloServer` type resolves differently depending on the importing package's own module format — `@apollo/server` ships separate ESM (`dist/esm`) and CJS (`dist/cjs`) type declarations, and `@as-integrations/aws-lambda` has no `"type"` field in its `package.json` (defaults CommonJS), so it resolves the CJS declaration for its own `ApolloServer` parameter while our ESM file resolves the ESM one. Same class at runtime, two nominally incompatible declarations at compile time (TS2345, private field identity mismatch) — a known dual-package hazard, not something the removal introduced; the old package avoided it only because its `tsconfig.json` used classic `"moduleResolution": "Node"`, which ignores conditional `exports` and always resolves to one declaration file. Fixed with a documented `as unknown as` cast at the single call site in `lambda.ts` — safe since it's the identical package underneath, purely a type-identity artifact.
+
+Verified: `nx build api`, `nx test api`, `nx lint api` green; `node dist/main.js` + `curl -X POST /graphql -d '{"query":"query { health }"}'` still returns `{"data":{"health":"ok"}}`.
+
+Not committed — holding per explicit instruction.
