@@ -1,0 +1,7 @@
+query Workflows {
+  workflows {
+    id
+    name
+    status
+  }
+}

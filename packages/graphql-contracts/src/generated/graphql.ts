@@ -18,6 +18,14 @@ export type Scalars = {
 export type Query = {
   __typename: 'Query';
   health: Scalars['String']['output'];
+  workflows: Array<Workflow>;
+};
+
+export type Workflow = {
+  __typename: 'Workflow';
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+  status: Scalars['String']['output'];
 };
 
 export type HealthQueryVariables = Exact<{ [key: string]: never; }>;
@@ -25,5 +33,11 @@ export type HealthQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type HealthQuery = { health: string };
 
+export type WorkflowsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type WorkflowsQuery = { workflows: Array<{ __typename: 'Workflow', id: string, name: string, status: string }> };
+
 
 export const HealthDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Health"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"health"}}]}}]} as unknown as DocumentNode<HealthQuery, HealthQueryVariables>;
+export const WorkflowsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Workflows"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"workflows"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]}}]} as unknown as DocumentNode<WorkflowsQuery, WorkflowsQueryVariables>;
