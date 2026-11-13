@@ -28,6 +28,11 @@ export class WorkflowResolver {
   }
 
   @Mutation(() => Workflow)
+  generateWorkflow(@Args('prompt') prompt: string): Promise<Workflow> {
+    return this.workflowService.generateFromPrompt(prompt);
+  }
+
+  @Mutation(() => Workflow)
   createWorkflow(
     @Args('input') input: CreateWorkflowInput,
   ): Promise<Workflow> {

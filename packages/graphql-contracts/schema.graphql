@@ -53,6 +53,7 @@ type Mutation {
   approveWorkflow(id: ID!): Workflow!
   createWorkflow(input: CreateWorkflowInput!): Workflow!
   deleteWorkflow(id: ID!): Boolean!
+  generateWorkflow(prompt: String!): Workflow!
 }
 
 type Query {
@@ -82,5 +83,7 @@ enum WorkflowStatus {
   ACTIVE
   ARCHIVED
   DRAFT
+  GENERATING
+  GENERATION_FAILED
   PENDING_APPROVAL
 }

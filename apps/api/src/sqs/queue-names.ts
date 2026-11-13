@@ -1,0 +1,2 @@
+export const WORKFLOW_GENERATION_QUEUE_URL =
+  process.env.WORKFLOW_GENERATION_QUEUE_URL ?? '';

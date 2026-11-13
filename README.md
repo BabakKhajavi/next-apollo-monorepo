@@ -20,35 +20,61 @@ next-apollo-monorepo/
 │   │       ├── providers/
 │   │       └── lib/
 │   │
-│   └── api/                    # NestJS + Apollo Server 5 (code-first GraphQL)
+│   ├── api/                    # NestJS + Apollo Server 5 (code-first GraphQL)
+│   │   └── src/
+│   │       ├── graphql/        # One module per domain (workflow/, execution/,
+│   │       │                   #   dashboard/): model, repository, service,
+│   │       │                   #   resolver, module — each a feature module
+│   │       │                   #   imported into AppModule, own DI graph
+│   │       ├── dynamodb/       # DynamoDBDocumentClient provider (DynamoDbModule,
+│   │       │                   #   @Global), table/index name constants
+│   │       ├── sqs/            # SQS client provider (SqsModule, @Global) +
+│   │       │                   #   SqsService.sendMessage — workflow.service.ts
+│   │       │                   #   enqueues generation requests here
+│   │       ├── common/         # Paginated() generic connection factory,
+│   │       │                   #   cursor encode/decode (opaque base64 of
+│   │       │                   #   DynamoDB's LastEvaluatedKey)
+│   │       ├── app.module.ts   # GraphQLModule.forRoot, autoSchemaFile
+│   │       ├── main.ts         # Dev entry (Express HTTP listener)
+│   │       └── handler.ts      # Prod Lambda entry (exports `handler`) — bare
+│   │                            #   @apollo/server + @as-integrations/aws-lambda
+│   │                            #   inline here; skips Nest's HTTP adapter at
+│   │                            #   request time
+│   │
+│   └── ai-worker/              # SQS-triggered AI workflow generation worker
 │       └── src/
-│           ├── graphql/        # One module per domain (workflow/, execution/,
-│           │                   #   dashboard/): model, repository, service,
-│           │                   #   resolver, module — each a feature module
-│           │                   #   imported into AppModule, own DI graph
-│           ├── dynamodb/       # DynamoDBDocumentClient provider (DynamoDbModule,
-│           │                   #   @Global), table/index name constants
-│           ├── common/         # Paginated() generic connection factory,
-│           │                   #   cursor encode/decode (opaque base64 of
-│           │                   #   DynamoDB's LastEvaluatedKey)
-│           ├── app.module.ts   # GraphQLModule.forRoot, autoSchemaFile
-│           ├── main.ts         # Dev entry (Express HTTP listener)
-│           └── lambda.ts       # Prod Lambda entry — bare @apollo/server +
-│                                #   @as-integrations/aws-lambda inline here;
-│                                #   skips Nest's HTTP adapter at request time
+│           ├── handler.ts      # Entry point — SQS event source mapping trigger
+│           │                   #   (exports `handler`). Deploy-and-test only,
+│           │                   #   no local runner.
+│           ├── services/       # workflow-generation.service.ts (processMessage):
+│           │                   #   @monorepo/ai-helper structured generation ->
+│           │                   #   DynamoDB update -> AppSync Events publish
+│           ├── types/          # WorkflowGenerationMessage
+│           ├── repositories/   # Narrow, self-contained Workflows table update
+│           │                   #   (not shared with apps/api — apps can't
+│           │                   #   depend on each other in this workspace)
+│           └── realtime/       # AppSync Events config + per-workflow channel naming
 │
 ├── packages/
 │   ├── design-system/          # Atomic Design + Storybook
 │   ├── apollo-client/          # Apollo Client + Next.js SSR
 │   ├── graphql-contracts/      # Generated schema.graphql + typed operations
 │   │                           #   (GraphQL Code Generator, TypedDocumentNode)
-│   ├── ai-helper/              # LangChain + AI Model Factory
-│   ├── realtime/               # AWS AppSync Events
+│   ├── ai-helper/              # LangChain model factory (createChatModel: anthropic/
+│   │                           #   openai/gemini) + generateStructured() Zod helper —
+│   │                           #   provider-agnostic, reusable by any future AI feature
+│   ├── realtime/               # AppSync Events HTTP publish helper (publishEvent)
 │   ├── auth/                   # Shared authentication
 │   ├── shared/                 # Types, utils, validation
 │   └── config/                 # Shared tooling configuration
 │
-├── infra/                      # AWS CDK (stubs — Terraform replaces this in Phase 6)
+├── infra/
+│   ├── stacks/                  # AWS CDK (stubs — superseded by infra/terraform)
+│   └── terraform/               # Real infra, pulled forward from Phase 6 for Phase 3:
+│                                 #   SQS (workflow-generation queue + DLQ), AppSync
+│                                 #   Events API (API_KEY auth, workflow-updates channel
+│                                 #   namespace). `terraform apply` provisions real,
+│                                 #   billable AWS resources — run manually, not from here.
 │
 ├── docker-compose.yml          # DynamoDB Local for dev (apps/api)
 │

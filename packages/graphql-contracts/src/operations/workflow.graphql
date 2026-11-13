@@ -1,7 +1,10 @@
 query Workflows {
   workflows {
-    id
-    name
-    status
+    items {
+      id
+      name
+      status
+    }
+    nextCursor
   }
 }

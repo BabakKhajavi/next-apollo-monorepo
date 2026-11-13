@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ulid } from 'ulid';
 import { decodeCursor, encodeCursor } from '../../common/cursor.util.js';
+import { WORKFLOW_GENERATION_QUEUE_URL } from '../../sqs/queue-names.js';
+import { SqsService } from '../../sqs/sqs.service.js';
 import { CreateWorkflowInput } from './create-workflow.input.js';
 import { WorkflowStatus } from './workflow-status.enum.js';
 import { Workflow } from './workflow.model.js';
@@ -13,7 +15,32 @@ export interface WorkflowConnection {
 
 @Injectable()
 export class WorkflowService {
-  constructor(private readonly repository: WorkflowRepository) {}
+  constructor(
+    private readonly repository: WorkflowRepository,
+    private readonly sqsService: SqsService,
+  ) {}
+
+  // Returns immediately with a GENERATING placeholder; the AI worker (SQS
+  // consumer, apps/ai-worker) fills in the real definition asynchronously
+  // and the client picks up the result via an AppSync Events subscription
+  // rather than polling this mutation's response.
+  async generateFromPrompt(prompt: string): Promise<Workflow> {
+    const now = new Date();
+    const workflow: Workflow = {
+      id: ulid(),
+      name: prompt.slice(0, 80),
+      definition: {},
+      status: WorkflowStatus.GENERATING,
+      createdAt: now,
+      updatedAt: now,
+    };
+    await this.repository.put(workflow);
+    await this.sqsService.sendMessage(WORKFLOW_GENERATION_QUEUE_URL, {
+      workflowId: workflow.id,
+      prompt,
+    });
+    return workflow;
+  }
 
   async create(input: CreateWorkflowInput): Promise<Workflow> {
     const now = new Date();

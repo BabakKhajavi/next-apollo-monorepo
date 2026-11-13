@@ -1,0 +1,21 @@
+{
+  "name": "ai-worker",
+  "version": "0.0.1",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@monorepo/ai-helper": "workspace:*",
+    "@monorepo/realtime": "workspace:*",
+    "@aws-sdk/client-dynamodb": "^3.1166.0",
+    "@aws-sdk/lib-dynamodb": "^3.1166.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.164",
+    "@types/node": "^24.0.0",
+    "typescript": "^6.0.2"
+  }
+}

@@ -9,6 +9,7 @@ import { DashboardModule } from './graphql/dashboard/dashboard.module.js';
 import { ExecutionModule } from './graphql/execution/execution.module.js';
 import { HealthResolver } from './graphql/health.resolver.js';
 import { WorkflowModule } from './graphql/workflow/workflow.module.js';
+import { SqsModule } from './sqs/sqs.module.js';
 
 // SDL is generated on boot and shared with packages/graphql-contracts so
 // GraphQL Code Generator can run against it without a live server.
@@ -27,6 +28,7 @@ const schemaOutputPath = fileURLToPath(
       sortSchema: true,
     }),
     DynamoDbModule,
+    SqsModule,
     WorkflowModule,
     ExecutionModule,
     DashboardModule,

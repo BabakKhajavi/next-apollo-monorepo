@@ -1,0 +1,24 @@
+{
+  "name": "ai-worker",
+  "sourceRoot": "apps/ai-worker/src",
+  "projectType": "application",
+  "tags": ["scope:ai-worker", "type:app", "platform:backend"],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/ai-worker",
+        "main": "apps/ai-worker/src/handler.ts",
+        "tsConfig": "apps/ai-worker/tsconfig.json"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "oxlint --type-aware src/",
+        "cwd": "apps/ai-worker"
+      }
+    }
+  }
+}

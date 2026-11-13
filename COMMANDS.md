@@ -240,4 +240,50 @@ Three real bugs surfaced and fixed along the way, each worth remembering:
 
 Verified end-to-end against DynamoDB Local + seed data: `workflows(first: 10)`, `executions(workflowId: ..., first: 10)` (via `byWorkflowId` GSI), `dashboardStats` (via `byStatus` GSI), `createWorkflow` mutation. `nx test api`, `nx lint api` green.
 
-Not committed — holding per explicit instruction.
+## 24. Phase 3 — AI Automation Builder: async `generateWorkflow`, SQS, AI worker Lambda, AppSync Events
+
+Why async instead of calling the LLM inline in the resolver: API Gateway's 29s timeout doesn't fit structured-output generation reliably, `langchain` + provider SDKs are heavy to bundle into the main API Lambda's cold start, and AI calls shouldn't be able to starve Lambda concurrency for plain CRUD queries. Same shape as the existing SQS → worker pattern already planned for execution — `generateWorkflow` enqueues and returns immediately; a separate worker consumes, generates, and pushes the result over AppSync Events instead of the client polling.
+
+**`packages/ai-helper`** — filled in as a genuinely reusable AI toolkit, not a one-off for this feature:
+- `createChatModel(provider: 'anthropic' | 'openai' | 'gemini', options?)` — single factory entry point; `gemini` throws with a clear "add `@langchain/google-genai`" message since that package isn't installed yet
+- `generateStructured(model, zodSchema, prompt)` — generic wrapper over LangChain's `.withStructuredOutput()`, not specific to workflows; any future feature needing schema-constrained LLM output goes through this
+- `schemas/workflow-definition.ts` — `WorkflowDefinitionSchema` (Zod): one `trigger` (`schedule`/`webhook`/`event`) + 1+ `actions` (`sendEmail`/`httpRequest`/`runScript`), each with an open `config` record. This is the only workflow-specific piece; everything else in the package is provider-agnostic.
+
+**GraphQL layer decision** — `Workflow.definition` stays a `JSON` scalar rather than being modeled as proper GraphQL types. AI-generated content needs to tolerate new trigger/action shapes without a schema migration every time; Zod validates the one place it's produced (the AI worker, before persisting) instead of GraphQL validating every read. Type safety where it's actually needed (the write path), flexibility where structure legitimately varies (the read path).
+
+**`apps/api` changes:**
+- `WorkflowStatus` gained `GENERATING` and `GENERATION_FAILED`
+- `src/sqs/` — new `SqsModule` (`@Global`, mirrors `DynamoDbModule`'s shape) + `SqsService.sendMessage`
+- `WorkflowService.generateFromPrompt(prompt)` — writes a `GENERATING` row with an empty `definition` placeholder, enqueues `{workflowId, prompt}`, returns immediately (no LLM call in this process)
+- `WorkflowResolver.generateWorkflow(prompt: String!): Workflow!` mutation
+
+**`apps/ai-worker`** — new Nx app, plain TypeScript (no NestJS — a single SQS-consumer handler doesn't need a DI container):
+- `handler.ts` — `processMessage`: `createChatModel('anthropic')` → `generateStructured(..., WorkflowDefinitionSchema, ...)` → update the `Workflows` row (`DRAFT` + `definition`, or `GENERATION_FAILED` on error) → `publishEvent` to AppSync Events channel `/workflow-updates/{workflowId}` (per-workflow channel so a client only subscribes to the generation it's waiting on, not a firehose)
+- `dynamodb.ts` — deliberately duplicates a ~20-line `UpdateCommand` rather than importing `apps/api`'s `WorkflowRepository`: Nx apps can't depend on each other, and the worker only ever needs this one narrow write
+- `lambda.ts` — sole entry point, `SQSHandler` for an event-source-mapping trigger. No local runner by design: this Lambda is small enough that deploy-and-test is the whole workflow, not worth a local-polling stand-in (unlike `apps/api`, which has real reason to run outside Lambda — a long-lived dev server).
+- On failure, rethrows after writing `GENERATION_FAILED` + publishing the error, so SQS's own redrive policy (not application code) handles retry/DLQ
+
+**`packages/realtime`** — filled in with `publishEvent(config, { channel, events })`, a thin wrapper over AppSync Events' HTTP publish API (`POST {httpEndpoint}/event`, `x-api-key` header — API_KEY auth was the explicit choice for demo simplicity over IAM/Cognito).
+
+**No local runner for `ai-worker` — removed after initial build.** First pass added a `main.ts` dev entry that long-polled the real SQS queue in a loop (stand-in for the Lambda event-source-mapping trigger, same hybrid-entry-point shape as `apps/api`'s `main.ts`/`lambda.ts`). Explicitly rejected: this Lambda is small enough that deploy-and-test is the right workflow, and the polling loop was unneeded complexity for its own sake. Deleted `main.ts`, the `serve` project target, and the `tsx` dev dependency — `lambda.ts` is now the only entry point. SQS and AppSync Events still have no local emulator wired into this repo (unlike DynamoDB's `dynamodb-local`), but that's moot now: there's no local path to need one for.
+
+**`infra/terraform/`** — new directory, pulling a slice of Phase 6 forward (per the standing "Terraform exclusively, no CDK/CloudFormation" rule; `infra/stacks/` CDK stubs are untouched, still dead weight):
+- `sqs.tf` — `workflow-generation` queue + `workflow-generation-dlq`, redrive after 3 receives
+- `appsync-events.tf` — `aws_appsync_api` (Events API, API_KEY auth) + `aws_appsync_channel_namespace` (`workflow-updates`) + `aws_appsync_api_key`
+- `outputs.tf` — queue URL/ARN, AppSync HTTP + realtime endpoints, API key (sensitive)
+- **`terraform apply` was not run** — it provisions real, billable AWS resources under your account; left for you to run manually with your own credentials once ready.
+
+**Fixed along the way (pre-existing, not caused by this phase):** `packages/graphql-contracts/src/operations/workflow.graphql` still queried `workflows { id name status }` as a flat list — stale since Phase 2 changed `workflows` to return `WorkflowPage` (`{ items, nextCursor }`). Nobody updated the hand-written operation doc after that pagination change, so `graphql-contracts:codegen` failed validation. Fixed: wrapped the field selection in `items { ... }` + added `nextCursor`.
+
+```
+pnpm install    # @langchain/anthropic, @langchain/core, @langchain/openai, zod (ai-helper);
+                # @aws-sdk/client-sqs (api)
+mkdir -p infra/terraform apps/ai-worker/src
+nx run-many -t build lint test -p ai-helper realtime ai-worker api
+nx run graphql-contracts:codegen
+rm apps/ai-worker/src/main.ts   # removed — see "No local runner" above
+```
+
+Verified: `schema.graphql` regenerates correctly via a local `nx serve api` boot (`generateWorkflow(prompt: String!): Workflow!` present, `GENERATING`/`GENERATION_FAILED` in `WorkflowStatus`). `nx build/lint/test` green across `ai-helper`, `realtime`, `ai-worker`, `api`. **Not verified end-to-end** — that requires `terraform apply` (real SQS queue + AppSync Events API), an `ANTHROPIC_API_KEY`, and deploying `ai-worker` as an actual Lambda, none of which exist yet; per your call, that verification happens after deploy, not locally.
+
+Not committed — holding per explicit instruction (ask before I commit/push this phase, same as Phase 2).
