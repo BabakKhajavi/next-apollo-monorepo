@@ -7,6 +7,7 @@ out
 cdk.out
 coverage
 *.log
+*.tsbuildinfo
 .env
 .env.*
 .DS_Store
