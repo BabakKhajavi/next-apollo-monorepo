@@ -22,7 +22,15 @@ next-apollo-monorepo/
 │   │
 │   └── api/                    # NestJS + Apollo Server 5 (code-first GraphQL)
 │       └── src/
-│           ├── graphql/        # Resolvers (health.resolver.ts, ...)
+│           ├── graphql/        # One module per domain (workflow/, execution/,
+│           │                   #   dashboard/): model, repository, service,
+│           │                   #   resolver, module — each a feature module
+│           │                   #   imported into AppModule, own DI graph
+│           ├── dynamodb/       # DynamoDBDocumentClient provider (DynamoDbModule,
+│           │                   #   @Global), table/index name constants
+│           ├── common/         # Paginated() generic connection factory,
+│           │                   #   cursor encode/decode (opaque base64 of
+│           │                   #   DynamoDB's LastEvaluatedKey)
 │           ├── app.module.ts   # GraphQLModule.forRoot, autoSchemaFile
 │           ├── main.ts         # Dev entry (Express HTTP listener)
 │           └── lambda.ts       # Prod Lambda entry — bare @apollo/server +
@@ -40,7 +48,9 @@ next-apollo-monorepo/
 │   ├── shared/                 # Types, utils, validation
 │   └── config/                 # Shared tooling configuration
 │
-├── infra/                      # AWS CDK
+├── infra/                      # AWS CDK (stubs — Terraform replaces this in Phase 6)
+│
+├── docker-compose.yml          # DynamoDB Local for dev (apps/api)
 │
 ├── tools/                      # Nx generators and scripts
 │
@@ -76,6 +86,9 @@ next-apollo-monorepo/
 ```
 pnpm run dev:web          # run web dev server alone (separate terminal)
 pnpm run dev:api          # run api dev server alone (separate terminal)
+pnpm --filter api db:up             # start DynamoDB Local (docker-compose)
+pnpm --filter api db:create-tables  # create Workflows/Executions tables + GSIs locally
+pnpm --filter api db:seed           # seed sample workflows/executions
 pnpm run preview:web      # production build + next start, for real Core Web Vitals testing
 pnpm run graph            # visualize full project dependency graph
 pnpm run show:web         # inspect web's targets/deps

@@ -210,3 +210,34 @@ Surfaced a real TypeScript issue while inlining: `apps/api`'s `tsconfig.json` us
 Verified: `nx build api`, `nx test api`, `nx lint api` green; `node dist/main.js` + `curl -X POST /graphql -d '{"query":"query { health }"}'` still returns `{"data":{"health":"ok"}}`.
 
 Not committed — holding per explicit instruction.
+
+## 23. Phase 2 — DynamoDB + GraphQL (Workflows, Executions, dashboard stats, cursor pagination)
+
+Two tables, matching the original spec:
+
+- **Workflows**: PK `id`. No GSI — "list all workflows" is a `Scan` with a page `Limit`, a deliberate call at single-tenant demo scale (noted in `workflow.repository.ts`); a GSI keyed on `ownerId` is the right fix once auth/multi-tenancy lands.
+- **Executions**: PK `id`. **GSI `byWorkflowId`** (PK `workflowId`, SK `createdAt`) for "executions for this workflow, newest first" — the one access pattern that genuinely needs an index. **GSI `byStatus`** (PK `status`, SK `createdAt`) so the dashboard can count executions per status via `Query ... Select COUNT` instead of a full scan.
+
+Each domain is its own Nest feature module (`apps/api/src/graphql/{workflow,execution,dashboard}/`: model, repository, service, resolver, module), imported into `AppModule` rather than flattened into its `providers` array — the earlier `WorkflowResolver` sat directly in `AppModule.providers`; moved into `WorkflowModule` as part of this phase. All three still build into **one** GraphQL schema — GraphQL doesn't have "schema per module"; that's what Apollo Federation subgraphs are for, a different architecture not needed here.
+
+DynamoDB client lives in `apps/api/src/dynamodb/dynamodb.module.ts` (`@Global()`, exports a `DynamoDBDocumentClient` under the `DYNAMODB_DOCUMENT_CLIENT` token) — same client code works against DynamoDB Local (dev, `DYNAMODB_ENDPOINT` set) and real DynamoDB in Lambda (no endpoint override, IAM role via default credential chain). Kept inside `apps/api` rather than a new shared package — same reasoning as the `apollo-server` removal: no second consumer yet. It'll likely move once `apps/worker` (Phase 4) also needs it.
+
+Cursor pagination (`apps/api/src/common/cursor.util.ts` + `paginated.ts`): the GraphQL `after` cursor is just base64 JSON of DynamoDB's own `LastEvaluatedKey` — no hand-rolled offset paging. `Paginated(ItemType)` is Nest's documented generic-type-factory pattern for code-first GraphQL (no native generics).
+
+```
+pnpm add @aws-sdk/client-dynamodb @aws-sdk/lib-dynamodb graphql-type-json ulid --filter api
+docker compose up -d       # DynamoDB Local
+node apps/api/scripts/create-tables.mjs
+node apps/api/scripts/seed.mjs
+```
+
+Three real bugs surfaced and fixed along the way, each worth remembering:
+
+1. **Generic `Paginated()` type invisible in schema** — `@ObjectType(name, { isAbstract: true })` only registers the type when something *else* subclasses it with its own `@ObjectType()`; used directly as a resolver return type, it never appears in the schema (`CannotDetermineOutputTypeError`). Fix: drop `isAbstract`.
+2. **Same error, different cause** — calling `Paginated(Workflow)` *inside* the `@Query(() => ...)` thunk means `@ObjectType()` only runs when the thunk is invoked, during schema build — but Nest's lazy-metadata flush (which registers decorated types) runs once, earlier. Fix: call `Paginated(Workflow)` once at module scope (`const WorkflowPage = Paginated(Workflow)`), so decoration happens at import time like any other type.
+3. **`GraphQLJSON` default import resolved to the whole module namespace, not the scalar** — `graphql-type-json`'s CJS build exports its default via `exports["default"] = ...` (bracket notation), which Node's ESM/CJS interop (`cjs-module-lexer`) fails to statically detect; a default import silently got the entire exports object instead, so `instanceof GraphQLScalarType` was `false` and Nest couldn't map the field type. Fix: `import { GraphQLJSON } from 'graphql-type-json'` (named export is detected fine).
+4. **`GraphQLISODateTime.serialize()` returned `null`** for `createdAt`/`updatedAt` — the built-in scalar calls `.toISOString()` on the resolved value, but the model fields held plain strings (DynamoDB's storage format). Fix: model fields are `Date` (matches what the scalar expects); repositories convert ISO string ↔ `Date` at the DynamoDB boundary (`fromItem`/`toItem` in each repository).
+
+Verified end-to-end against DynamoDB Local + seed data: `workflows(first: 10)`, `executions(workflowId: ..., first: 10)` (via `byWorkflowId` GSI), `dashboardStats` (via `byStatus` GSI), `createWorkflow` mutation. `nx test api`, `nx lint api` green.
+
+Not committed — holding per explicit instruction.

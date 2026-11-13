@@ -2,13 +2,85 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+input CreateWorkflowInput {
+  definition: JSON!
+  name: String!
+}
+
+type DashboardStats {
+  executionsByStatus: [ExecutionStatusCount!]!
+  totalExecutions: Int!
+  totalWorkflows: Int!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type Execution {
+  createdAt: DateTime!
+  error: String
+  id: ID!
+  status: ExecutionStatus!
+  updatedAt: DateTime!
+  workflowId: ID!
+}
+
+type ExecutionPage {
+  items: [Execution!]!
+  nextCursor: String
+}
+
+enum ExecutionStatus {
+  FAILED
+  PENDING
+  RUNNING
+  SUCCEEDED
+}
+
+type ExecutionStatusCount {
+  count: Int!
+  status: ExecutionStatus!
+}
+
+"""
+The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+"""
+scalar JSON
+
+type Mutation {
+  approveWorkflow(id: ID!): Workflow!
+  createWorkflow(input: CreateWorkflowInput!): Workflow!
+  deleteWorkflow(id: ID!): Boolean!
+}
+
 type Query {
+  dashboardStats: DashboardStats!
+  execution(id: ID!): Execution!
+  executions(after: String, first: Int! = 20, workflowId: ID!): ExecutionPage!
   health: String!
-  workflows: [Workflow!]!
+  workflow(id: ID!): Workflow!
+  workflows(after: String, first: Int! = 20): WorkflowPage!
 }
 
 type Workflow {
+  createdAt: DateTime!
+  definition: JSON!
   id: ID!
   name: String!
-  status: String!
+  status: WorkflowStatus!
+  updatedAt: DateTime!
+}
+
+type WorkflowPage {
+  items: [Workflow!]!
+  nextCursor: String
+}
+
+enum WorkflowStatus {
+  ACTIVE
+  ARCHIVED
+  DRAFT
+  PENDING_APPROVAL
 }
