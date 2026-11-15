@@ -9,13 +9,17 @@ export async function generateStructured<Schema extends z.ZodType>(
   schema: Schema,
   prompt: string,
 ): Promise<z.infer<Schema>> {
-  // strict: false — relaxes OpenAI's structured-output validation where
-  // possible; Anthropic/Gemini ignore the option, so it's safe to always
-  // pass. (The actual fix for the record-field crash was the schema
-  // itself — see workflow-definition.schema.ts — this is just a sane
-  // default on top of that.)
+  // method: 'function_calling' — OpenAI's `jsonSchema` method (LangChain's
+  // auto-picked default for non-gpt-3/4-base models) is OpenAI's newer
+  // "Structured Outputs" feature, which requires every object node to be
+  // fully closed (explicit `properties` + `required` listing every key,
+  // no open-ended `additionalProperties` records) — incompatible with
+  // z.record() fields like trigger/action `config`, independent of
+  // `strict`. Classic tool/function-calling doesn't impose that
+  // constraint and is what Anthropic's structured output effectively uses
+  // too, so this keeps behavior consistent across providers.
   const structuredModel = model.withStructuredOutput(schema, {
-    strict: false,
+    method: 'function_calling',
   });
   return structuredModel.invoke(prompt);
 }
