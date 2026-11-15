@@ -81,6 +81,19 @@ jobs:
       # execution-worker -> dist-lambda/handler.js (single esbuild file).
       - run: pnpm nx run ${{ matrix.app }}:bundle
 
+      - name: Debug OIDC token claims (temporary)
+        run: |
+          token=$(curl -sH "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sts.amazonaws.com" | jq -r '.value')
+          payload=$(echo "$token" | cut -d. -f2)
+          # base64url -> base64 padding fix, then decode
+          payload="${payload//-/+}"
+          payload="${payload//_/\/}"
+          case $(( ${#payload} % 4 )) in
+            2) payload="${payload}==" ;;
+            3) payload="${payload}=" ;;
+          esac
+          echo "$payload" | base64 -d | jq '{iss, aud, sub, repository, ref, workflow}'
+
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::314146325814:role/github-lambda-deploy
