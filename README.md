@@ -85,8 +85,7 @@ next-apollo-monorepo/
 │   └── config/                 # Shared tooling configuration
 │
 ├── infra/
-│   ├── stacks/                  # AWS CDK (stubs — superseded by infra/terraform)
-│   └── terraform/               # Real infra, deployed and verified against real AWS —
+│   ├── terraform/               # Real infra, deployed and verified against real AWS —
 │                                 #   DynamoDB (nam-workflows, nam-executions + GSIs), 3
 │                                 #   Lambdas (ai-worker/execution-worker esbuild-bundled
 │                                 #   to dist-lambda/handler.js; api packaged via `nest
@@ -97,15 +96,30 @@ next-apollo-monorepo/
 │                                 #   var.project_name), SQS (workflow-generation +
 │                                 #   workflow-execution queues + DLQs), AppSync Events
 │                                 #   API (API_KEY auth, workflow-updates +
-│                                 #   execution-updates channel namespaces). `terraform
-│                                 #   apply` provisions real, billable AWS resources — run
-│                                 #   manually, not from here.
+│                                 #   execution-updates channel namespaces). State is
+│                                 #   remote (S3, versioned + encrypted + native
+│                                 #   locking) — see infra/terraform-bootstrap/ below.
+│   └── terraform-bootstrap/     # Separate root module, own local state (chicken-and-
+│                                 #   egg: the state bucket can't manage its own
+│                                 #   backend). Creates the S3 state bucket and the two
+│                                 #   GitHub OIDC IAM roles CI assumes (github-terraform-
+│                                 #   plan: read-only, any PR; github-terraform-apply:
+│                                 #   full infra write, push-to-main only). Applied
+│                                 #   manually, rarely touched.
 │
 ├── docker-compose.yml          # DynamoDB Local for dev (apps/api)
 │
 ├── tools/                      # Nx generators and scripts
 │
-├── .github/                    # CI/CD workflows
+├── .github/                    # CI/CD workflows — ci.yml (lint/test/build on every
+│                                 #   push/PR), terraform-plan.yml (PR against
+│                                 #   infra/terraform/**, posts plan as a PR comment),
+│                                 #   terraform-apply.yml (push to main, gated behind
+│                                 #   the `production` GitHub Environment's required
+│                                 #   reviewers), deploy-api.yml / deploy-web.yml
+│                                 #   (build-only, not wired to actual deploys yet),
+│                                 #   release.yml. Both Terraform workflows assume an
+│                                 #   OIDC role — no static AWS keys in CI.
 │
 ├── nx.json
 ├── pnpm-workspace.yaml

@@ -396,3 +396,46 @@ curl -X POST <api_gateway_url>/ -d '{"query":"{ health }"}'
 ```
 
 **Still not verified end-to-end:** the actual `generateWorkflow`/`executeWorkflow` mutations through to `ai-worker`/`execution-worker` and an AppSync Events push — only `{ health }` has been confirmed live so far. That's the next verification step, not yet done.
+
+## 28. Terraform enterprise best practices: remote state + GitHub OIDC CI/CD
+
+Requested as an explicit, incremental, phased task ("do not run terraform apply, migrate state, or modify existing AWS resources without my approval" — approval was given per-phase as each was explained). All of Phase 6's existing resources were preserved; nothing recreated or destroyed.
+
+**Phase 1 — Remote state.**
+- New `infra/terraform-bootstrap/` — a separate root module with its own local state (deliberate: the bucket that stores everyone else's state can't also manage its own backend config, so this one stays small and is applied by hand, rarely).
+- Creates `nam-terraform-state-314146325814` (account-id-suffixed for global uniqueness): versioned, SSE-S3 encrypted, all public access blocked.
+- Hit a real permission gap applying it: `zaplite-main-developer` had no S3 permissions at all — `AmazonS3FullAccess` attached, then it applied clean.
+- Backed up the existing local state (`infra/terraform/terraform.tfstate`, 86KB, 32 resources) to `/tmp/terraform.tfstate.backup-before-migration` before touching anything.
+- Added a `backend "s3"` block to `infra/terraform/provider.tf` — `use_lockfile = true` (Terraform 1.17's native S3 locking; no separate DynamoDB lock table needed, simpler than the classic S3+DynamoDB pattern).
+- `terraform init -migrate-state -force-copy` — copied local state into S3. Verified byte-for-byte via `aws s3 ls` (same size as the local file) and `terraform plan` (0 real changes — the only 2 diffs shown were expected noise: the AppSync API key's `timeadd(timestamp(), ...)` recalculating every plan, and the dummy `openai_api_key` used for this verification-only plan, not drift).
+
+**Phase 2 — GitHub Actions CI/CD.**
+- Checked for an existing GitHub OIDC provider first (`aws iam list-open-id-connect-providers`) — one already existed in the account (from another project; OIDC providers are account-wide, not project-scoped, so this is fine to reuse). Referenced it via a `data` source in `infra/terraform-bootstrap/oidc.tf` rather than creating a duplicate (IAM only allows one per URL per account anyway).
+- Two IAM roles, not one — a PR's `plan` runs with `ReadOnlyAccess` only (any PR, including from a fork, could otherwise mint write credentials just by opening one); only a push to `refs/heads/main` can assume the role with real write permissions (mirrors exactly what's attached to `zaplite-main-developer`: IAM, API Gateway, AppSync, CloudWatch Logs, Lambda, DynamoDB, SQS, plus explicit S3 access scoped to just the state bucket).
+  - `github-terraform-plan` — trust condition: `repo:BabakKhajavi/next-apollo-monorepo:pull_request`
+  - `github-terraform-apply` — trust condition: `repo:BabakKhajavi/next-apollo-monorepo:ref:refs/heads/main`
+- Found and replaced a dead workflow: `.github/workflows/deploy-infra.yml` ran `pnpm --filter infra cdk deploy` — a leftover from before the Terraform pivot; no `infra` package with a `cdk` script has existed for phases. Deleted it rather than leaving a broken workflow alongside the new ones.
+- New `.github/workflows/terraform-plan.yml` (PR, path-filtered to `infra/terraform/**`) — `fmt -check`, `validate`, `plan`, posts the plan as a PR comment via `actions/github-script`. Runs `pnpm run bundle:lambdas` first since `archive_file` resources read local `dist-lambda(-pkg)` directories that don't exist on a fresh checkout.
+- New `.github/workflows/terraform-apply.yml` (push to `main`, same path filter) — `environment: production` gates it behind GitHub's required-reviewer approval (configured in repo settings, not from a file — manual step, see below).
+- Both workflows: `concurrency: { group: terraform, cancel-in-progress: false }` so a plan and an apply (or two applies) can never race against the same state.
+- `aws-actions/configure-aws-credentials@v4` assumes the respective role via OIDC — no static AWS keys stored in GitHub at all.
+
+**Manual steps still required (GitHub UI, not doable from here — no `gh` CLI installed in this environment):**
+1. Repo Settings → Secrets and variables → Actions → add `OPENAI_API_KEY` (used as `TF_VAR_openai_api_key` in both workflows).
+2. Repo Settings → Environments → create `production`, add a required reviewer — without this, `terraform-apply.yml` runs unattended on every merge to `main` instead of pausing for approval.
+
+```
+# Phase 1
+cd infra/terraform-bootstrap && terraform init && terraform apply
+cp infra/terraform/terraform.tfstate /tmp/terraform.tfstate.backup-before-migration
+# added backend "s3" {} block to infra/terraform/provider.tf
+cd infra/terraform && terraform init -migrate-state -force-copy
+terraform plan   # verify: 0 real changes
+
+# Phase 2
+# added oidc.tf to infra/terraform-bootstrap/, applied (11 resources)
+rm .github/workflows/deploy-infra.yml   # dead CDK reference
+# added .github/workflows/terraform-plan.yml, terraform-apply.yml
+```
+
+Not yet done: Phase 3 (reusable modules, separating app-code deploy from infra `apply` so Terraform doesn't silently redeploy Lambda code that a separate pipeline manages) — explicitly deferred, not started this session.

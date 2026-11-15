@@ -1,0 +1,93 @@
+name: Terraform Plan
+
+on:
+  pull_request:
+    paths:
+      - "infra/terraform/**"
+
+permissions:
+  id-token: write # required for OIDC
+  contents: read
+  pull-requests: write # to post the plan as a PR comment
+
+# Only one plan/apply against this state at a time, across both workflows.
+concurrency:
+  group: terraform
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # Lambda functions are packaged via archive_file reading local
+      # dist-lambda(-pkg) directories — terraform plan needs these present.
+      - run: pnpm run bundle:lambdas
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::314146325814:role/github-terraform-plan
+          aws-region: us-east-1
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.17.2"
+
+      - name: Terraform fmt
+        id: fmt
+        working-directory: infra/terraform
+        run: terraform fmt -check -recursive
+        continue-on-error: true
+
+      - name: Terraform Init
+        working-directory: infra/terraform
+        run: terraform init -input=false
+
+      - name: Terraform Validate
+        working-directory: infra/terraform
+        run: terraform validate -no-color
+
+      - name: Terraform Plan
+        id: plan
+        working-directory: infra/terraform
+        run: terraform plan -no-color -input=false
+        env:
+          TF_VAR_openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+        continue-on-error: true
+
+      - name: Comment plan on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const output = `#### Terraform Format: \`${{ steps.fmt.outcome }}\`
+            #### Terraform Plan: \`${{ steps.plan.outcome }}\`
+
+            <details><summary>Show plan</summary>
+
+            \`\`\`
+            ${{ steps.plan.outputs.stdout }}
+            ${{ steps.plan.outputs.stderr }}
+            \`\`\`
+
+            </details>
+
+            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
+
+      - name: Fail if plan or fmt failed
+        if: steps.plan.outcome == 'failure' || steps.fmt.outcome == 'failure'
+        run: exit 1

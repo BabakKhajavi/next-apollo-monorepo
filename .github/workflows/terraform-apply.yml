@@ -1,0 +1,55 @@
+name: Terraform Apply
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "infra/terraform/**"
+
+permissions:
+  id-token: write # required for OIDC
+  contents: read
+
+# Only one plan/apply against this state at a time, across both workflows.
+concurrency:
+  group: terraform
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    # Protected environment in repo settings — configure required reviewers
+    # there so this job pauses for manual approval before touching real
+    # infra. Without that environment/reviewer configured, this runs
+    # unattended on every merge to main.
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm run bundle:lambdas
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::314146325814:role/github-terraform-apply
+          aws-region: us-east-1
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.17.2"
+
+      - name: Terraform Init
+        working-directory: infra/terraform
+        run: terraform init -input=false
+
+      - name: Terraform Apply
+        working-directory: infra/terraform
+        run: terraform apply -auto-approve -input=false
+        env:
+          TF_VAR_openai_api_key: ${{ secrets.OPENAI_API_KEY }}
