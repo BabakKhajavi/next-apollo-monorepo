@@ -11,6 +11,13 @@ coverage
 .env
 .env.*
 .DS_Store
+dist-lambda
+dist-lambda-pkg
+*.tfstate
+*.tfstate.*
+.terraform
+.terraform-build
+*.auto.tfvars
 
 
 

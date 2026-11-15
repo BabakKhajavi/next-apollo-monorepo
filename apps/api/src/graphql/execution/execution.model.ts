@@ -12,7 +12,7 @@ export class Execution {
   @Field(() => ExecutionStatus)
   status: ExecutionStatus;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   error?: string;
 
   // Date, not string — see workflow.model.ts for why.

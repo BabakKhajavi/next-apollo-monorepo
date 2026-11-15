@@ -28,13 +28,15 @@ export class WorkflowResolver {
   }
 
   @Mutation(() => Workflow)
-  generateWorkflow(@Args('prompt') prompt: string): Promise<Workflow> {
+  generateWorkflow(
+    @Args('prompt', { type: () => String }) prompt: string,
+  ): Promise<Workflow> {
     return this.workflowService.generateFromPrompt(prompt);
   }
 
   @Mutation(() => Workflow)
   createWorkflow(
-    @Args('input') input: CreateWorkflowInput,
+    @Args('input', { type: () => CreateWorkflowInput }) input: CreateWorkflowInput,
   ): Promise<Workflow> {
     return this.workflowService.create(input);
   }

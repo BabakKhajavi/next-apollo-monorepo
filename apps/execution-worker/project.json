@@ -19,6 +19,13 @@
         "command": "oxlint --type-aware src/",
         "cwd": "apps/execution-worker"
       }
+    },
+    "bundle": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "esbuild src/handler.ts --bundle --platform=node --target=node22 --format=cjs --outfile=dist-lambda/handler.js",
+        "cwd": "apps/execution-worker"
+      }
     }
   }
 }

@@ -6,19 +6,19 @@ resource "aws_appsync_api" "workflow_events" {
   name = "${var.project_name}-workflow-events"
 
   event_config {
-    auth_providers {
+    auth_provider {
       auth_type = "API_KEY"
     }
 
-    connection_auth_modes {
+    connection_auth_mode {
       auth_type = "API_KEY"
     }
 
-    default_publish_auth_modes {
+    default_publish_auth_mode {
       auth_type = "API_KEY"
     }
 
-    default_subscribe_auth_modes {
+    default_subscribe_auth_mode {
       auth_type = "API_KEY"
     }
   }
@@ -26,12 +26,12 @@ resource "aws_appsync_api" "workflow_events" {
 
 resource "aws_appsync_channel_namespace" "workflow_updates" {
   api_id = aws_appsync_api.workflow_events.api_id
-  name   = "workflow-updates"
+  name   = "${var.project_name}-workflow-updates"
 }
 
 resource "aws_appsync_channel_namespace" "execution_updates" {
   api_id = aws_appsync_api.workflow_events.api_id
-  name   = "execution-updates"
+  name   = "${var.project_name}-execution-updates"
 }
 
 resource "aws_appsync_api_key" "workflow_events_key" {

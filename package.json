@@ -19,6 +19,7 @@
     "affected:graph": "nx graph --affected",
     "affected:list": "nx show projects --affected",
     "reset": "nx reset",
+    "bundle:lambdas": "nx run-many -t bundle -p api ai-worker execution-worker",
     "release:dry": "nx release --dry-run",
     "release": "nx release"
   },
@@ -27,6 +28,7 @@
     "@nx/next": "24.0.5",
     "@nx/oxlint": "24.0.5",
     "@swc-node/register": "^1.12.1",
+    "esbuild": "^0.28.2",
     "nx": "24.0.5",
     "oxlint": "^1.75.0",
     "typescript": "^5.6.0"

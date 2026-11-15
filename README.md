@@ -40,7 +40,14 @@ next-apollo-monorepo/
 │   │       └── handler.ts      # Prod Lambda entry (exports `handler`) — bare
 │   │                            #   @apollo/server + @as-integrations/aws-lambda
 │   │                            #   inline here; skips Nest's HTTP adapter at
-│   │                            #   request time
+│   │                            #   request time. Deployed via the `bundle` Nx
+│   │                            #   target: `nest build` (real tsc output —
+│   │                            #   NestJS's GraphQL schema builder + constructor
+│   │                            #   DI both need design:paramtypes, which esbuild
+│   │                            #   never emits) + `pnpm deploy --prod` for a
+│   │                            #   real, non-symlinked node_modules ->
+│   │                            #   dist-lambda-pkg/. ai-worker/execution-worker
+│   │                            #   stay on esbuild (plain functions, no Nest DI).
 │   │
 │   ├── ai-worker/              # SQS-triggered AI workflow generation worker
 │   │   └── src/
@@ -79,12 +86,20 @@ next-apollo-monorepo/
 │
 ├── infra/
 │   ├── stacks/                  # AWS CDK (stubs — superseded by infra/terraform)
-│   └── terraform/               # Real infra, pulled forward from Phase 6 for Phases 3-4:
-│                                 #   SQS (workflow-generation + workflow-execution queues,
-│                                 #   each with its own DLQ), AppSync Events API (API_KEY
-│                                 #   auth, workflow-updates + execution-updates channel
-│                                 #   namespaces). `terraform apply` provisions real,
-│                                 #   billable AWS resources — run manually, not from here.
+│   └── terraform/               # Real infra, deployed and verified against real AWS —
+│                                 #   DynamoDB (nam-workflows, nam-executions + GSIs), 3
+│                                 #   Lambdas (ai-worker/execution-worker esbuild-bundled
+│                                 #   to dist-lambda/handler.js; api packaged via `nest
+│                                 #   build` + `pnpm deploy --prod` to dist-lambda-pkg/ —
+│                                 #   run `pnpm run bundle:lambdas` before apply), API
+│                                 #   Gateway HTTP API fronting `api`, per-Lambda IAM
+│                                 #   roles (all resources prefixed `nam-` via
+│                                 #   var.project_name), SQS (workflow-generation +
+│                                 #   workflow-execution queues + DLQs), AppSync Events
+│                                 #   API (API_KEY auth, workflow-updates +
+│                                 #   execution-updates channel namespaces). `terraform
+│                                 #   apply` provisions real, billable AWS resources — run
+│                                 #   manually, not from here.
 │
 ├── docker-compose.yml          # DynamoDB Local for dev (apps/api)
 │

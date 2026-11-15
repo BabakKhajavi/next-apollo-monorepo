@@ -8,7 +8,7 @@ export async function processMessage(
   message: WorkflowGenerationMessage,
 ): Promise<void> {
   try {
-    const model = createChatModel('anthropic');
+    const model = createChatModel('openai');
     const definition = await generateStructured(
       model,
       WorkflowDefinitionSchema,

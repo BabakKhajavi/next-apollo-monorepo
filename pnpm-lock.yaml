@@ -3,6 +3,7 @@ lockfileVersion: '9.0'
 settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
+  injectWorkspacePackages: true
 
 importers:
 
@@ -30,6 +31,9 @@ importers:
       '@swc-node/register':
         specifier: ^1.12.1
         version: 1.12.1(@swc/core@1.16.22(@swc/helpers@0.5.23))(@swc/types@0.1.28)(typescript@5.9.3)
+      esbuild:
+        specifier: ^0.28.2
+        version: 0.28.2
       nx:
         specifier: 24.0.5
         version: 24.0.5(@swc-node/register@1.12.1(@swc/core@1.16.22(@swc/helpers@0.5.23))(@swc/types@0.1.28)(typescript@5.9.3))(@swc/core@1.16.22(@swc/helpers@0.5.23))
@@ -50,7 +54,7 @@ importers:
         version: 3.1166.0(@aws-sdk/client-dynamodb@3.1166.0)
       '@monorepo/ai-helper':
         specifier: workspace:*
-        version: link:../../packages/ai-helper
+        version: file:packages/ai-helper(ws@8.22.1)
       '@monorepo/realtime':
         specifier: workspace:*
         version: link:../../packages/realtime
@@ -87,7 +91,7 @@ importers:
         version: 3.1166.0(@aws-sdk/client-dynamodb@3.1166.0)
       '@monorepo/ai-helper':
         specifier: workspace:*
-        version: link:../../packages/ai-helper
+        version: file:packages/ai-helper(ws@8.22.1)
       '@monorepo/auth':
         specifier: workspace:*
         version: link:../../packages/auth
@@ -190,7 +194,7 @@ importers:
         version: 3.1166.0(@aws-sdk/client-dynamodb@3.1166.0)
       '@monorepo/ai-helper':
         specifier: workspace:*
-        version: link:../../packages/ai-helper
+        version: file:packages/ai-helper(ws@8.22.1)
       '@monorepo/realtime':
         specifier: workspace:*
         version: link:../../packages/realtime
@@ -215,7 +219,7 @@ importers:
         version: 0.14.5(@apollo/client@4.3.7(graphql-ws@6.4.1(graphql@16.15.0)(ws@8.22.1))(graphql@16.15.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rxjs@7.8.2))(@types/react@19.3.0)(graphql@16.15.0)(next@16.4.5(@babel/core@7.29.13)(@types/node@20.19.43)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rxjs@7.8.2)
       '@monorepo/apollo-client':
         specifier: workspace:*
-        version: link:../../packages/apollo-client
+        version: file:packages/apollo-client(@apollo/client-integration-nextjs@0.14.5(@apollo/client@4.3.7(graphql-ws@6.4.1(graphql@16.15.0)(ws@8.22.1))(graphql@16.15.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rxjs@7.8.2))(@types/react@19.3.0)(graphql@16.15.0)(next@16.4.5(@babel/core@7.29.13)(@types/node@20.19.43)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rxjs@7.8.2))(@apollo/client@4.3.7(graphql-ws@6.4.1(graphql@16.15.0)(ws@8.22.1))(graphql@16.15.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rxjs@7.8.2))(graphql@16.15.0)(react@19.3.0)(rxjs@7.8.2)
       '@monorepo/auth':
         specifier: workspace:*
         version: link:../../packages/auth
@@ -2186,6 +2190,18 @@ packages:
   '@lukeed/csprng@1.1.0':
     resolution: {integrity: sha512-Z7C/xXCiGWsg0KuKsHTKJxbWhpI3Vs5GwLfOean7MGyVFGqdRgBbAjOCh6u4bbjPc/8MJ2pZmK/0DLdCbivLDA==}
     engines: {node: '>=8'}
+
+  '@monorepo/ai-helper@file:packages/ai-helper':
+    resolution: {directory: packages/ai-helper, type: directory}
+
+  '@monorepo/apollo-client@file:packages/apollo-client':
+    resolution: {directory: packages/apollo-client, type: directory}
+    peerDependencies:
+      '@apollo/client': ^4.3.0
+      '@apollo/client-integration-nextjs': ^0.14.0
+      graphql: ^16.9.0
+      react: ^19.0.0
+      rxjs: ^7.8.0
 
   '@napi-rs/wasm-runtime@0.2.4':
     resolution: {integrity: sha512-9zESzOO5aDByvhIAsOy9TbpZ0Ur2AJbUI7UT73kcUTS2mxAMHOBaa1st/jAymNoCtvrit99kkzT1FZuXVcgfIQ==}
@@ -9369,7 +9385,37 @@ snapshots:
     transitivePeerDependencies:
       - ws
 
+  '@langchain/openai@0.6.17(@langchain/core@0.3.80)(ws@8.22.1)':
+    dependencies:
+      '@langchain/core': 0.3.80(openai@5.12.2(ws@8.22.1)(zod@3.25.76))
+      js-tiktoken: 1.0.21
+      openai: 5.12.2(ws@8.22.1)(zod@3.25.76)
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - ws
+
   '@lukeed/csprng@1.1.0': {}
+
+  '@monorepo/ai-helper@file:packages/ai-helper(ws@8.22.1)':
+    dependencies:
+      '@langchain/anthropic': 0.3.34(@langchain/core@0.3.80(openai@5.12.2(ws@8.22.1)(zod@3.25.76)))(zod@3.25.76)
+      '@langchain/core': 0.3.80(openai@5.12.2(ws@8.22.1)(zod@3.25.76))
+      '@langchain/openai': 0.6.17(@langchain/core@0.3.80)(ws@8.22.1)
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - '@opentelemetry/api'
+      - '@opentelemetry/exporter-trace-otlp-proto'
+      - '@opentelemetry/sdk-trace-base'
+      - openai
+      - ws
+
+  '@monorepo/apollo-client@file:packages/apollo-client(@apollo/client-integration-nextjs@0.14.5(@apollo/client@4.3.7(graphql-ws@6.4.1(graphql@16.15.0)(ws@8.22.1))(graphql@16.15.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rxjs@7.8.2))(@types/react@19.3.0)(graphql@16.15.0)(next@16.4.5(@babel/core@7.29.13)(@types/node@20.19.43)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rxjs@7.8.2))(@apollo/client@4.3.7(graphql-ws@6.4.1(graphql@16.15.0)(ws@8.22.1))(graphql@16.15.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rxjs@7.8.2))(graphql@16.15.0)(react@19.3.0)(rxjs@7.8.2)':
+    dependencies:
+      '@apollo/client': 4.3.7(graphql-ws@6.4.1(graphql@16.15.0)(ws@8.22.1))(graphql@16.15.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rxjs@7.8.2)
+      '@apollo/client-integration-nextjs': 0.14.5(@apollo/client@4.3.7(graphql-ws@6.4.1(graphql@16.15.0)(ws@8.22.1))(graphql@16.15.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rxjs@7.8.2))(@types/react@19.3.0)(graphql@16.15.0)(next@16.4.5(@babel/core@7.29.13)(@types/node@20.19.43)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rxjs@7.8.2)
+      graphql: 16.15.0
+      react: 19.3.0
+      rxjs: 7.8.2
 
   '@napi-rs/wasm-runtime@0.2.4':
     dependencies:
@@ -11652,7 +11698,6 @@ snapshots:
       '@esbuild/win32-arm64': 0.28.2
       '@esbuild/win32-ia32': 0.28.2
       '@esbuild/win32-x64': 0.28.2
-    optional: true
 
   escalade@3.2.0: {}
 

@@ -31,6 +31,17 @@
         "command": "vitest run",
         "cwd": "apps/api"
       }
+    },
+    "bundle": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "pnpm --filter api exec nest build",
+          "rm -rf apps/api/dist-lambda-pkg",
+          "pnpm --filter api deploy --prod apps/api/dist-lambda-pkg"
+        ],
+        "parallel": false
+      }
     }
   }
 }

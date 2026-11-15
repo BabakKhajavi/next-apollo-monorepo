@@ -26,3 +26,15 @@ output "appsync_events_api_key" {
   value     = aws_appsync_api_key.workflow_events_key.key
   sensitive = true
 }
+
+output "api_gateway_url" {
+  value = aws_apigatewayv2_api.api.api_endpoint
+}
+
+output "workflows_table_name" {
+  value = aws_dynamodb_table.workflows.name
+}
+
+output "executions_table_name" {
+  value = aws_dynamodb_table.executions.name
+}

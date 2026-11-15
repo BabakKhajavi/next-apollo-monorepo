@@ -12,13 +12,19 @@ import { WorkflowModule } from './graphql/workflow/workflow.module.js';
 import { SqsModule } from './sqs/sqs.module.js';
 
 // SDL is generated on boot and shared with packages/graphql-contracts so
-// GraphQL Code Generator can run against it without a live server.
-const schemaOutputPath = fileURLToPath(
-  new URL(
-    '../../../packages/graphql-contracts/schema.graphql',
-    import.meta.url,
-  ),
-);
+// GraphQL Code Generator can run against it without a live server — but
+// only in dev (`nest start`): in Lambda, /var/task is read-only and the
+// bundled handler has no `import.meta.url` to resolve the path from, so
+// autoSchemaFile falls back to in-memory generation (`true`) there.
+const isLambda = Boolean(process.env.AWS_LAMBDA_FUNCTION_NAME);
+const schemaOutputPath = isLambda
+  ? true
+  : fileURLToPath(
+      new URL(
+        '../../../packages/graphql-contracts/schema.graphql',
+        import.meta.url,
+      ),
+    );
 
 @Module({
   imports: [
