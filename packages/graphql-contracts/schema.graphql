@@ -53,6 +53,7 @@ type Mutation {
   approveWorkflow(id: ID!): Workflow!
   createWorkflow(input: CreateWorkflowInput!): Workflow!
   deleteWorkflow(id: ID!): Boolean!
+  executeWorkflow(workflowId: ID!): Execution!
   generateWorkflow(prompt: String!): Workflow!
 }
 

@@ -16,3 +16,4 @@ export const WorkflowDefinitionSchema = z.object({
 });
 
 export type WorkflowDefinition = z.infer<typeof WorkflowDefinitionSchema>;
+export type Action = z.infer<typeof ActionSchema>;

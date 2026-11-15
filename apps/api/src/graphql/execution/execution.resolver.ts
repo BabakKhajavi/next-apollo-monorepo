@@ -1,4 +1,4 @@
-import { Args, ID, Int, Query, Resolver } from '@nestjs/graphql';
+import { Args, ID, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { Paginated } from '../../common/paginated.js';
 import { Execution } from './execution.model.js';
 import { ExecutionService } from './execution.service.js';
@@ -22,5 +22,12 @@ export class ExecutionResolver {
     @Args('after', { type: () => String, nullable: true }) after?: string,
   ) {
     return this.executionService.listByWorkflowId(workflowId, first, after);
+  }
+
+  @Mutation(() => Execution)
+  executeWorkflow(
+    @Args('workflowId', { type: () => ID }) workflowId: string,
+  ): Promise<Execution> {
+    return this.executionService.execute(workflowId);
   }
 }

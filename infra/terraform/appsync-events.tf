@@ -29,6 +29,11 @@ resource "aws_appsync_channel_namespace" "workflow_updates" {
   name   = "workflow-updates"
 }
 
+resource "aws_appsync_channel_namespace" "execution_updates" {
+  api_id = aws_appsync_api.workflow_events.api_id
+  name   = "execution-updates"
+}
+
 resource "aws_appsync_api_key" "workflow_events_key" {
   api_id  = aws_appsync_api.workflow_events.api_id
   expires = timeadd(timestamp(), "8760h") # 1 year; rotate before production use

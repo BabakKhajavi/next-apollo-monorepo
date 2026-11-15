@@ -287,3 +287,36 @@ rm apps/ai-worker/src/main.ts   # removed — see "No local runner" above
 Verified: `schema.graphql` regenerates correctly via a local `nx serve api` boot (`generateWorkflow(prompt: String!): Workflow!` present, `GENERATING`/`GENERATION_FAILED` in `WorkflowStatus`). `nx build/lint/test` green across `ai-helper`, `realtime`, `ai-worker`, `api`. **Not verified end-to-end** — that requires `terraform apply` (real SQS queue + AppSync Events API), an `ANTHROPIC_API_KEY`, and deploying `ai-worker` as an actual Lambda, none of which exist yet; per your call, that verification happens after deploy, not locally.
 
 Not committed — holding per explicit instruction (ask before I commit/push this phase, same as Phase 2).
+
+## 25. Phase 4 — Execution Pipeline: `executeWorkflow` mutation, SQS, execution worker Lambda, real `httpRequest`
+
+Same async shape as Phase 3's workflow generation: `executeWorkflow(workflowId)` validates the workflow is `ACTIVE`, writes a `PENDING` `Execution` row, enqueues to a new SQS queue, returns immediately. A new `apps/execution-worker` Lambda consumes it, runs each action in `Workflow.definition.actions` in order, and pushes `RUNNING`/`SUCCEEDED`/`FAILED` over AppSync Events on a per-execution channel.
+
+**Two scope decisions made explicitly before building, not defaulted:**
+- **Action execution realism:** `httpRequest` actually executes (real `fetch`) — genuinely demoable without extra infra. `sendEmail`/`runScript` are structural stubs (log + succeed) — no SES, no sandboxed script runtime. Proves the pipeline's shape without the infra cost of making all three real.
+- **Trigger scope:** manual/webhook-style execution only (`executeWorkflow` mutation is the only entry point). The `schedule` trigger type still exists in `WorkflowDefinitionSchema` (Zod) but nothing consumes it — no EventBridge Scheduler wiring. Documented gap, not an oversight.
+
+**`apps/api` changes:**
+- `ExecutionRepository.put` — the only new write path; status transitions after that belong to the worker, same split as `WorkflowRepository`/`ai-worker` in Phase 3
+- `ExecutionService.execute(workflowId)` — looks up the `Workflow` via `WorkflowService` (so `ExecutionModule` now imports `WorkflowModule`), throws `BadRequestException` if not `ACTIVE`, creates the `PENDING` row, enqueues `{executionId, workflowId, actions}` by reading `workflow.definition.actions` (cast from the `JSON` scalar — safe because that shape is written exclusively via `WorkflowDefinitionSchema` in Phase 3)
+- `ExecutionResolver.executeWorkflow` mutation
+- Cleanup: `SqsService` moved into `SqsModule`'s own `providers`/`exports` (it's `@Global`, so every feature module gets it for free — matches `DynamoDbModule`'s shape) instead of each feature module re-registering it. `WorkflowModule` no longer lists it directly.
+
+**`apps/execution-worker`** — new Nx app, identical shape to `apps/ai-worker` (`handler.ts` entry only, no local runner, same reasoning as Phase 3: small enough that deploy-and-test is the right workflow):
+- `services/run-action.ts` — `runAction(action)`, switches on `action.type`; the one place the three action types' realism differs
+- `services/workflow-execution.service.ts` — `processMessage`: `RUNNING` → run every action in sequence → `SUCCEEDED`, or catch → `FAILED` + rethrow (SQS redrive handles retry/DLQ, same as `ai-worker`)
+- `repositories/execution.repository.ts` — narrow, self-contained `Executions` table update, deliberately not sharing `apps/api`'s `ExecutionRepository` (apps can't depend on each other in this Nx workspace)
+- `realtime/execution-channel.ts` — `channelFor(executionId)` → `/execution-updates/{executionId}`, mirrors `ai-worker`'s per-entity channel pattern
+- `types/index.ts` — imports `Action` from `@monorepo/ai-helper` rather than redefining it; `packages/ai-helper/src/workflow-definition.schema.ts` now also exports `type Action = z.infer<typeof ActionSchema>` so the action shape has one source of truth across `apps/api`, `apps/ai-worker`'s generation path, and this worker's execution path
+
+**Hit and fixed: circular import in `apps/api/src/sqs/`** — `sqs.module.ts` imported `SqsService` (to register it as a provider) while `sqs.service.ts` imported `SQS_CLIENT` back from `sqs.module.ts`. Direct two-file cycle; Node's ESM loader hit `ReferenceError: Cannot access 'SqsService' before initialization` at boot (only surfaces at runtime — `nx build`/`tsc` doesn't catch circular *value* imports, only type ones). Fixed by extracting the token into its own `sqs.tokens.ts`, so neither file imports the other.
+
+**`infra/terraform/`** — extended, not new: `workflow_execution` queue + its own DLQ in `sqs.tf`; `execution-updates` channel namespace added to the existing `aws_appsync_api` in `appsync-events.tf` (one AppSync Events API serves both Phase 3 and Phase 4 channels — no need for a second API). New outputs for the execution queue's URL/ARN. Still not applied.
+
+```
+mkdir -p apps/execution-worker/src/{services,types,repositories,realtime}
+nx run-many -t build lint test -p api ai-helper execution-worker ai-worker realtime
+nx run graphql-contracts:codegen
+```
+
+Verified: `schema.graphql` regenerates correctly via a local `nest start` boot (`executeWorkflow(workflowId: ID!): Execution!` present; boot log confirms clean module init — `DynamoDbModule`, `SqsModule`, `WorkflowModule`, `ExecutionModule`, `DashboardModule` all initialize without error, catching the circular-import bug above before it shipped). `nx build/lint/test` green across `api`, `ai-helper`, `execution-worker`, `ai-worker`, `realtime`, `graphql-contracts`. **Not verified end-to-end** — same gap as Phase 3: needs `terraform apply`, and `execution-worker` deployed as an actual Lambda, before a real `executeWorkflow` → action-run → AppSync push can be observed.

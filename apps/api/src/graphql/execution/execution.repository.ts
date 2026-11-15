@@ -1,6 +1,7 @@
 import {
   DynamoDBDocumentClient,
   GetCommand,
+  PutCommand,
   QueryCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { Inject, Injectable } from '@nestjs/common';
@@ -28,12 +29,29 @@ function fromItem(item: Record<string, unknown>): Execution {
   } as Execution;
 }
 
+function toItem(execution: Execution): Record<string, unknown> {
+  return {
+    ...execution,
+    createdAt: execution.createdAt.toISOString(),
+    updatedAt: execution.updatedAt.toISOString(),
+  };
+}
+
 @Injectable()
 export class ExecutionRepository {
   constructor(
     @Inject(DYNAMODB_DOCUMENT_CLIENT)
     private readonly client: DynamoDBDocumentClient,
   ) {}
+
+  // Only a write path for the initial PENDING row — the execution worker
+  // (apps/execution-worker) owns status transitions via its own
+  // self-contained repository, same as apps/ai-worker does for Workflows.
+  async put(execution: Execution): Promise<void> {
+    await this.client.send(
+      new PutCommand({ TableName: EXECUTIONS_TABLE, Item: toItem(execution) }),
+    );
+  }
 
   async getById(id: string): Promise<Execution | undefined> {
     const result = await this.client.send(

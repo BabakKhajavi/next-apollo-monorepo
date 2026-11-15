@@ -1,6 +1,6 @@
 import { SendMessageCommand, type SQSClient } from '@aws-sdk/client-sqs';
 import { Inject, Injectable } from '@nestjs/common';
-import { SQS_CLIENT } from './sqs.module.js';
+import { SQS_CLIENT } from './sqs.tokens.js';
 
 @Injectable()
 export class SqsService {

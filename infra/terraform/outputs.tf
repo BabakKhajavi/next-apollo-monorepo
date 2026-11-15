@@ -6,6 +6,14 @@ output "workflow_generation_queue_arn" {
   value = aws_sqs_queue.workflow_generation.arn
 }
 
+output "workflow_execution_queue_url" {
+  value = aws_sqs_queue.workflow_execution.url
+}
+
+output "workflow_execution_queue_arn" {
+  value = aws_sqs_queue.workflow_execution.arn
+}
+
 output "appsync_events_http_endpoint" {
   value = "https://${aws_appsync_api.workflow_events.dns["HTTP"]}"
 }

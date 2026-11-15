@@ -30,7 +30,8 @@ next-apollo-monorepo/
 │   │       │                   #   @Global), table/index name constants
 │   │       ├── sqs/            # SQS client provider (SqsModule, @Global) +
 │   │       │                   #   SqsService.sendMessage — workflow.service.ts
-│   │       │                   #   enqueues generation requests here
+│   │       │                   #   enqueues generation requests, execution.service.ts
+│   │       │                   #   enqueues execution requests
 │   │       ├── common/         # Paginated() generic connection factory,
 │   │       │                   #   cursor encode/decode (opaque base64 of
 │   │       │                   #   DynamoDB's LastEvaluatedKey)
@@ -41,19 +42,27 @@ next-apollo-monorepo/
 │   │                            #   inline here; skips Nest's HTTP adapter at
 │   │                            #   request time
 │   │
-│   └── ai-worker/              # SQS-triggered AI workflow generation worker
-│       └── src/
-│           ├── handler.ts      # Entry point — SQS event source mapping trigger
-│           │                   #   (exports `handler`). Deploy-and-test only,
-│           │                   #   no local runner.
-│           ├── services/       # workflow-generation.service.ts (processMessage):
-│           │                   #   @monorepo/ai-helper structured generation ->
-│           │                   #   DynamoDB update -> AppSync Events publish
-│           ├── types/          # WorkflowGenerationMessage
-│           ├── repositories/   # Narrow, self-contained Workflows table update
-│           │                   #   (not shared with apps/api — apps can't
-│           │                   #   depend on each other in this workspace)
-│           └── realtime/       # AppSync Events config + per-workflow channel naming
+│   ├── ai-worker/              # SQS-triggered AI workflow generation worker
+│   │   └── src/
+│   │       ├── handler.ts      # Entry point — SQS event source mapping trigger
+│   │       │                   #   (exports `handler`). Deploy-and-test only,
+│   │       │                   #   no local runner.
+│   │       ├── services/       # workflow-generation.service.ts (processMessage):
+│   │       │                   #   @monorepo/ai-helper structured generation ->
+│   │       │                   #   DynamoDB update -> AppSync Events publish
+│   │       ├── types/          # WorkflowGenerationMessage
+│   │       ├── repositories/   # Narrow, self-contained Workflows table update
+│   │       │                   #   (not shared with apps/api — apps can't
+│   │       │                   #   depend on each other in this workspace)
+│   │       └── realtime/       # AppSync Events config + per-workflow channel naming
+│   │
+│   └── execution-worker/       # SQS-triggered workflow execution worker — same
+│       └── src/                 #   shape as ai-worker (handler.ts, services/, types/,
+│                                 #   repositories/, realtime/). Runs each action in
+│                                 #   Workflow.definition.actions: httpRequest is
+│                                 #   genuinely executed (real fetch); sendEmail/
+│                                 #   runScript are structural stubs (log + succeed) —
+│                                 #   no SES/sandboxed exec wired up for the demo.
 │
 ├── packages/
 │   ├── design-system/          # Atomic Design + Storybook
@@ -70,10 +79,11 @@ next-apollo-monorepo/
 │
 ├── infra/
 │   ├── stacks/                  # AWS CDK (stubs — superseded by infra/terraform)
-│   └── terraform/               # Real infra, pulled forward from Phase 6 for Phase 3:
-│                                 #   SQS (workflow-generation queue + DLQ), AppSync
-│                                 #   Events API (API_KEY auth, workflow-updates channel
-│                                 #   namespace). `terraform apply` provisions real,
+│   └── terraform/               # Real infra, pulled forward from Phase 6 for Phases 3-4:
+│                                 #   SQS (workflow-generation + workflow-execution queues,
+│                                 #   each with its own DLQ), AppSync Events API (API_KEY
+│                                 #   auth, workflow-updates + execution-updates channel
+│                                 #   namespaces). `terraform apply` provisions real,
 │                                 #   billable AWS resources — run manually, not from here.
 │
 ├── docker-compose.yml          # DynamoDB Local for dev (apps/api)

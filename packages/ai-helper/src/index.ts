@@ -4,6 +4,7 @@ export {
   ActionSchema,
   TriggerSchema,
   WorkflowDefinitionSchema,
+  type Action,
   type WorkflowDefinition,
 } from './workflow-definition.schema.js';
 export type { AiProvider, ChatModelOptions } from './types.js';

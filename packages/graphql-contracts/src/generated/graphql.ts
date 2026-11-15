@@ -65,6 +65,7 @@ export type Mutation = {
   approveWorkflow: Workflow;
   createWorkflow: Workflow;
   deleteWorkflow: Scalars['Boolean']['output'];
+  executeWorkflow: Execution;
   generateWorkflow: Workflow;
 };
 
@@ -81,6 +82,11 @@ export type MutationCreateWorkflowArgs = {
 
 export type MutationDeleteWorkflowArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type MutationExecuteWorkflowArgs = {
+  workflowId: Scalars['ID']['input'];
 };
 
 
