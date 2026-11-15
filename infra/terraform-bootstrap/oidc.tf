@@ -11,7 +11,10 @@ data "aws_iam_openid_connect_provider" "github" {
 }
 
 locals {
-  github_repo = "BabakKhajavi/next-apollo-monorepo"
+  # GitHub's OIDC `sub` claim embeds stable numeric owner/repo IDs, not just
+  # names (repo:OWNER@OWNER_ID/REPO@REPO_ID:...) — confirmed by printing the
+  # actual token claims in a debug step; the name-only format never matches.
+  github_repo = "BabakKhajavi@67204317/next-apollo-monorepo@1449882754"
 }
 
 # --- terraform plan (any PR against this repo) ---------------------------
@@ -136,14 +139,36 @@ output "github_terraform_apply_role_arn" {
   value = aws_iam_role.github_terraform_apply.arn
 }
 
-# --- lambda code deploy (push to main only) — narrower than the infra
-# apply role: only touches the 3 Lambda functions' code, nothing else. Used
-# by deploy-api.yml / deploy-ai-worker.yml / deploy-execution-worker.yml so
-# a code-only change doesn't need the broad terraform-apply role at all.
+# --- lambda code deploy (push to main OR staging — deploy-backend.yml
+# runs from both) — narrower than the infra apply role: only touches the 3
+# Lambda functions' code, nothing else.
+
+data "aws_iam_policy_document" "github_lambda_deploy_assume_role" {
+  statement {
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+    principals {
+      type        = "Federated"
+      identifiers = [data.aws_iam_openid_connect_provider.github.arn]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+    condition {
+      test     = "StringLike"
+      variable = "token.actions.githubusercontent.com:sub"
+      values = [
+        "repo:${local.github_repo}:ref:refs/heads/main",
+        "repo:${local.github_repo}:ref:refs/heads/staging",
+      ]
+    }
+  }
+}
 
 resource "aws_iam_role" "github_lambda_deploy" {
   name               = "github-lambda-deploy"
-  assume_role_policy = data.aws_iam_policy_document.github_apply_assume_role.json
+  assume_role_policy = data.aws_iam_policy_document.github_lambda_deploy_assume_role.json
 }
 
 data "aws_iam_policy_document" "github_lambda_deploy" {
