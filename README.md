@@ -116,9 +116,18 @@ next-apollo-monorepo/
 │                                 #   infra/terraform/**, posts plan as a PR comment),
 │                                 #   terraform-apply.yml (push to main, gated behind
 │                                 #   the `production` GitHub Environment's required
-│                                 #   reviewers), deploy-api.yml / deploy-web.yml
-│                                 #   (build-only, not wired to actual deploys yet),
-│                                 #   release.yml. Both Terraform workflows assume an
+│                                 #   reviewers), deploy-backend.yml (push to main or
+│                                 #   staging, or manual dispatch — one `detect` job
+│                                 #   runs `nx show projects --affected -t bundle` to
+│                                 #   find which of api/ai-worker/execution-worker
+│                                 #   actually changed, a matrixed `deploy` job then
+│                                 #   bundles + `aws lambda update-function-code` only
+│                                 #   those; Terraform's Lambda resources use
+│                                 #   `lifecycle.ignore_changes` on their code so this
+│                                 #   pipeline and `terraform apply` don't fight over
+│                                 #   source_code_hash), deploy-web.yml (build-only, not
+│                                 #   wired to an actual deploy yet), release.yml. Both
+│                                 #   Terraform workflows and deploy-backend.yml assume an
 │                                 #   OIDC role — no static AWS keys in CI.
 │
 ├── nx.json

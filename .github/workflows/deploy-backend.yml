@@ -1,0 +1,108 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches: [main, staging]
+    paths:
+      - "apps/api/**"
+      - "apps/ai-worker/**"
+      - "apps/execution-worker/**"
+      - "packages/**"
+  workflow_dispatch:
+    inputs:
+      force_all:
+        description: "Deploy all 3 apps regardless of what changed"
+        type: boolean
+        default: false
+
+permissions:
+  id-token: write # required for OIDC
+  contents: read
+
+concurrency:
+  group: deploy-backend-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      apps: ${{ steps.affected.outputs.apps }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # nx affected needs history to diff against
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Determine affected apps
+        id: affected
+        run: |
+          if [ "${{ inputs.force_all }}" = "true" ]; then
+            apps='["api","ai-worker","execution-worker"]'
+          else
+            base="${{ github.event.before }}"
+            # github.event.before is all-zeros on a workflow's first run on a
+            # new branch (or absent on workflow_dispatch) — fall back to
+            # diffing against the previous commit instead of failing.
+            if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ]; then
+              base="HEAD~1"
+            fi
+            apps=$(pnpm nx show projects --affected --base="$base" --head=HEAD -t bundle --json)
+          fi
+          echo "apps=$apps" >> "$GITHUB_OUTPUT"
+          echo "Affected apps: $apps"
+
+  deploy:
+    needs: detect
+    if: needs.detect.outputs.apps != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: ${{ fromJSON(needs.detect.outputs.apps) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm nx run-many -t lint build -p ${{ matrix.app }}
+
+      # api -> dist-lambda-pkg/ (nest build + pnpm deploy --prod, not
+      # esbuild — see infra/terraform/lambda.tf for why). ai-worker/
+      # execution-worker -> dist-lambda/handler.js (single esbuild file).
+      - run: pnpm nx run ${{ matrix.app }}:bundle
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::314146325814:role/github-lambda-deploy
+          aws-region: us-east-1
+
+      - name: Zip and deploy
+        run: |
+          case "${{ matrix.app }}" in
+            api)
+              cd apps/api/dist-lambda-pkg
+              zip -rq /tmp/deploy.zip .
+              ;;
+            ai-worker)
+              cd apps/ai-worker/dist-lambda
+              zip -q /tmp/deploy.zip handler.js
+              ;;
+            execution-worker)
+              cd apps/execution-worker/dist-lambda
+              zip -q /tmp/deploy.zip handler.js
+              ;;
+          esac
+          aws lambda update-function-code \
+            --function-name "nam-${{ matrix.app }}" \
+            --zip-file fileb:///tmp/deploy.zip \
+            --publish

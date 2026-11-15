@@ -135,3 +135,34 @@ output "github_terraform_plan_role_arn" {
 output "github_terraform_apply_role_arn" {
   value = aws_iam_role.github_terraform_apply.arn
 }
+
+# --- lambda code deploy (push to main only) — narrower than the infra
+# apply role: only touches the 3 Lambda functions' code, nothing else. Used
+# by deploy-api.yml / deploy-ai-worker.yml / deploy-execution-worker.yml so
+# a code-only change doesn't need the broad terraform-apply role at all.
+
+resource "aws_iam_role" "github_lambda_deploy" {
+  name               = "github-lambda-deploy"
+  assume_role_policy = data.aws_iam_policy_document.github_apply_assume_role.json
+}
+
+data "aws_iam_policy_document" "github_lambda_deploy" {
+  statement {
+    actions = ["lambda:UpdateFunctionCode", "lambda:GetFunction"]
+    resources = [
+      "arn:aws:lambda:us-east-1:${var.account_id}:function:nam-api",
+      "arn:aws:lambda:us-east-1:${var.account_id}:function:nam-ai-worker",
+      "arn:aws:lambda:us-east-1:${var.account_id}:function:nam-execution-worker",
+    ]
+  }
+}
+
+resource "aws_iam_role_policy" "github_lambda_deploy" {
+  name   = "lambda-update-code"
+  role   = aws_iam_role.github_lambda_deploy.id
+  policy = data.aws_iam_policy_document.github_lambda_deploy.json
+}
+
+output "github_lambda_deploy_role_arn" {
+  value = aws_iam_role.github_lambda_deploy.arn
+}

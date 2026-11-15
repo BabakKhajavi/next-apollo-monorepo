@@ -9,6 +9,11 @@ export async function generateStructured<Schema extends z.ZodType>(
   schema: Schema,
   prompt: string,
 ): Promise<z.infer<Schema>> {
-  const structuredModel = model.withStructuredOutput(schema);
+  // strict: false — OpenAI's strict JSON-schema mode rejects open-ended
+  // z.record() fields (used for trigger/action config); Anthropic/Gemini
+  // ignore this option, so it's safe to always pass.
+  const structuredModel = model.withStructuredOutput(schema, {
+    strict: false,
+  });
   return structuredModel.invoke(prompt);
 }

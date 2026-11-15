@@ -48,6 +48,14 @@ resource "aws_lambda_function" "api" {
       WORKFLOW_EXECUTION_QUEUE_URL   = aws_sqs_queue.workflow_execution.url
     }
   }
+
+  # Code is deployed by deploy-api.yml (aws lambda update-function-code),
+  # not by `terraform apply` — Terraform only owns the function's shape
+  # (IAM, env vars, timeout/memory), not its deployed code, so the two
+  # pipelines don't fight over source_code_hash.
+  lifecycle {
+    ignore_changes = [filename, source_code_hash]
+  }
 }
 
 resource "aws_cloudwatch_log_group" "api" {
@@ -75,6 +83,10 @@ resource "aws_lambda_function" "ai_worker" {
       APPSYNC_EVENTS_API_KEY               = aws_appsync_api_key.workflow_events_key.key
       WORKFLOW_UPDATES_CHANNEL_NAMESPACE   = aws_appsync_channel_namespace.workflow_updates.name
     }
+  }
+
+  lifecycle {
+    ignore_changes = [filename, source_code_hash]
   }
 }
 
@@ -108,6 +120,10 @@ resource "aws_lambda_function" "execution_worker" {
       APPSYNC_EVENTS_API_KEY               = aws_appsync_api_key.workflow_events_key.key
       EXECUTION_UPDATES_CHANNEL_NAMESPACE  = aws_appsync_channel_namespace.execution_updates.name
     }
+  }
+
+  lifecycle {
+    ignore_changes = [filename, source_code_hash]
   }
 }
 

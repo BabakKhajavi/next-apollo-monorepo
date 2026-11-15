@@ -438,4 +438,50 @@ rm .github/workflows/deploy-infra.yml   # dead CDK reference
 # added .github/workflows/terraform-plan.yml, terraform-apply.yml
 ```
 
-Not yet done: Phase 3 (reusable modules, separating app-code deploy from infra `apply` so Terraform doesn't silently redeploy Lambda code that a separate pipeline manages) — explicitly deferred, not started this session.
+Not yet done at the time: Phase 3 (reusable modules, separating app-code deploy from infra `apply`) — picked up in the next entry below.
+
+## 29. Phase 3 (deferred piece) — per-app code deploy pipeline, `staging` branch, real end-to-end AWS test, CI fixed
+
+**Live end-to-end test against real AWS**: triggered `generateWorkflow` for real via `curl` against the deployed API Gateway URL. Hit a real bug: `ai-worker`'s OpenAI call failed — `400 Invalid schema for response_format 'extract': ... schema must have a 'type' key`, from `WorkflowDefinitionSchema`'s `config: z.record(z.string(), z.unknown())` fields. OpenAI's strict structured-output mode (the default for `withStructuredOutput` on OpenAI models) rejects open-ended key-value maps — Anthropic's structured output didn't have this restriction, so the bug was invisible until switching providers. Fixed generically in `packages/ai-helper/src/services/generate-structured.ts`: pass `{ strict: false }` to `withStructuredOutput` always (Anthropic/Gemini ignore the option, so it's safe across all three providers, not just a provider-specific branch).
+
+**Decoupled Lambda code deploy from Terraform** (the deferred Phase 3 bullet): added `lifecycle { ignore_changes = [filename, source_code_hash] }` to all three `aws_lambda_function` resources in `lambda.tf`. Terraform now only owns the function's *shape* (IAM role, env vars, timeout/memory) — not its deployed code. Without this, a code-deploy pipeline and a later `terraform apply` would fight over `source_code_hash` (whichever ran last would silently revert the other's code).
+
+**New narrow IAM role**: `github-lambda-deploy` (`infra/terraform-bootstrap/oidc.tf`) — only `lambda:UpdateFunctionCode`/`GetFunction`, scoped to exactly the 3 function ARNs (hardcoded by name, since this is a separate root module from the one that creates them). Deliberately narrower than `github-terraform-apply` — a code-only deploy shouldn't need IAM/API Gateway/AppSync/DynamoDB/SQS write access.
+
+**One consolidated deploy pipeline, not three** — built `.github/workflows/deploy-api.yml` / `deploy-ai-worker.yml` / `deploy-execution-worker.yml` first (path-filtered per app), then replaced all three with a single `.github/workflows/deploy-backend.yml` using real `nx affected` detection instead of hand-maintained path filters, per explicit request ("pipelines should be based on packages"). Two jobs:
+- `detect` — `pnpm nx show projects --affected --base=<prev-commit> --head=HEAD -t bundle --json` → JSON array of which of `api`/`ai-worker`/`execution-worker` actually changed. Falls back to `HEAD~1` when `github.event.before` is all-zeros (first push to a new branch) or absent (`workflow_dispatch`). A `force_all` manual-dispatch input bypasses detection entirely.
+- `deploy` — matrixed over the detected array; for each app: `nx run-many -t lint build`, `nx run <app>:bundle`, zip (api's directory-based `dist-lambda-pkg/`, or the single `handler.js` for the two esbuild workers), `aws lambda update-function-code`.
+
+Triggers on push to `main` **or `staging`**, plus `workflow_dispatch` (explicit ask: "manual run option").
+
+**`staging` branch** — created from `main`, pushed. Explicit decision (asked via AskUserQuestion, not assumed): staging deploys to the *same* AWS resources as `main` (no separate environment/state) — a pre-main integration branch, not environment isolation. Revisit if real staging isolation is ever needed (would mean a second Terraform state key + `nam-staging-*` naming + a third OIDC trust condition).
+
+**Found and fixed CI, which had failed on every single run since the first commit** — not a version-mismatch issue as initially suspected, but a genuine pre-existing lint error in `apps/web` that nothing had ever run against (this session only ever ran scoped lints like `-p api ai-helper ...`, never the unscoped `nx run-many -t lint test build` that `ci.yml` actually runs). Reproduced locally by switching to Node 20 via `nvm` (matching `ci.yml`'s `node-version: 20`) and running the exact CI command — confirmed the failure wasn't Node-version-related (same failure persisted after fixing, independent of Node 20 vs 22). Root cause: `apps/web/apollo-client.d.ts`'s `export interface TypeOverrides extends GraphQLCodegenDataMasking.TypeOverrides {}` trips `@typescript-eslint/no-empty-object-type` — but this is Apollo's own documented module-augmentation pattern for opting into data masking, not dead code, so fixed with a scoped `eslint-disable-next-line` rather than removing it. Two more warnings in `apps/web/src/app/(public)/demo/queries.ts` (`gql` tagged templates inside `if (false)`, a GraphQL Code Generator static-extraction pattern) are warnings, not errors — don't fail the build, left as-is. Verified clean: `nx run-many -t lint test build` → 15/15 succeeded on Node 20.
+
+**Checked for and found no `GITHUB_TOKEN`/credential access** — needed `gh` CLI to inspect the failing CI run's logs; it wasn't installed (`brew install gh`), and once installed wasn't authenticated. Fetched the failure via the public GitHub REST API instead (`api.github.com/repos/.../actions/runs/.../jobs`, no auth needed for a public repo's job/step metadata) to find which step failed, then reproduced the actual failure locally rather than trying to pull the full log (which does require auth even for public repos).
+
+```
+# OpenAI structured-output fix
+# edited packages/ai-helper/src/services/generate-structured.ts
+pnpm nx run ai-worker:bundle
+
+# Lambda code/infra decoupling
+# added lifecycle.ignore_changes to all 3 aws_lambda_function resources
+# added github_lambda_deploy role + policy to infra/terraform-bootstrap/oidc.tf
+cd infra/terraform-bootstrap && terraform apply   # +2 resources
+
+# Consolidated deploy pipeline
+rm .github/workflows/deploy-api.yml .github/workflows/deploy-ai-worker.yml .github/workflows/deploy-execution-worker.yml
+# added .github/workflows/deploy-backend.yml
+
+git branch staging main && git push -u origin staging
+
+# CI fix
+nvm install 20 && nvm use 20
+pnpm nx run-many -t lint test build   # reproduced the web:lint failure
+# edited apps/web/apollo-client.d.ts (scoped eslint-disable)
+pnpm nx run-many -t lint test build   # 15/15 succeeded
+nvm use 22
+```
+
+Verified: `generateWorkflow` mutation confirmed live end-to-end up through the OpenAI call succeeding (the fix); full `ai-worker` → DynamoDB write → AppSync push not yet re-verified after the fix (next step). `deploy-backend.yml` not yet run for real (needs a push to `staging` or `main` touching one of the 3 apps, or a manual dispatch). `github-lambda-deploy` role applied by the user (blocked for me by the harness's destructive-action classifier on `terraform apply`, same as before). CI fix verified locally on Node 20 matching `ci.yml` exactly; not yet confirmed green on GitHub itself (needs a push).

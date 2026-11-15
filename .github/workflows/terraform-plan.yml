@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "infra/terraform/**"
+  workflow_dispatch: {}
 
 permissions:
   id-token: write # required for OIDC
@@ -64,6 +65,7 @@ jobs:
         continue-on-error: true
 
       - name: Comment plan on PR
+        if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
           script: |
