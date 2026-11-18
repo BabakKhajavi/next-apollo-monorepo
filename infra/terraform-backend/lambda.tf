@@ -39,13 +39,14 @@ resource "aws_lambda_function" "api" {
   role             = aws_iam_role.api_lambda.arn
   timeout          = 29 # API Gateway's own HTTP API integration timeout caps at 30s
   memory_size      = 512
+  publish          = true # need a numbered version to put Provisioned Concurrency on — see api_live alias below
 
   environment {
     variables = {
-      WORKFLOWS_TABLE_NAME        = aws_dynamodb_table.workflows.name
-      EXECUTIONS_TABLE_NAME       = aws_dynamodb_table.executions.name
+      WORKFLOWS_TABLE_NAME          = aws_dynamodb_table.workflows.name
+      EXECUTIONS_TABLE_NAME         = aws_dynamodb_table.executions.name
       WORKFLOW_GENERATION_QUEUE_URL = aws_sqs_queue.workflow_generation.url
-      WORKFLOW_EXECUTION_QUEUE_URL   = aws_sqs_queue.workflow_execution.url
+      WORKFLOW_EXECUTION_QUEUE_URL  = aws_sqs_queue.workflow_execution.url
     }
   }
 
@@ -63,6 +64,28 @@ resource "aws_cloudwatch_log_group" "api" {
   retention_in_days = 14
 }
 
+# RSC pages call this Lambda server-side on every render, so cold starts
+# here delay first byte just as much as a cold web server would —
+# Provisioned Concurrency on a stable alias removes that. deploy-backend.yml
+# repoints this alias to the newly published version after each deploy
+# (via `aws lambda update-alias`), so function_version here is only the
+# initial/fallback value.
+resource "aws_lambda_alias" "api_live" {
+  name             = "live"
+  function_name    = aws_lambda_function.api.function_name
+  function_version = aws_lambda_function.api.version
+
+  lifecycle {
+    ignore_changes = [function_version]
+  }
+}
+
+resource "aws_lambda_provisioned_concurrency_config" "api_live" {
+  function_name                     = aws_lambda_function.api.function_name
+  qualifier                         = aws_lambda_alias.api_live.name
+  provisioned_concurrent_executions = 1
+}
+
 # --- ai-worker: SQS-triggered, no local runner (see COMMANDS.md Phase 3) -
 
 resource "aws_lambda_function" "ai_worker" {
@@ -77,11 +100,11 @@ resource "aws_lambda_function" "ai_worker" {
 
   environment {
     variables = {
-      WORKFLOWS_TABLE_NAME                 = aws_dynamodb_table.workflows.name
-      OPENAI_API_KEY                       = var.openai_api_key
-      APPSYNC_EVENTS_HTTP_ENDPOINT          = "https://${aws_appsync_api.workflow_events.dns["HTTP"]}"
-      APPSYNC_EVENTS_API_KEY               = aws_appsync_api_key.workflow_events_key.key
-      WORKFLOW_UPDATES_CHANNEL_NAMESPACE   = aws_appsync_channel_namespace.workflow_updates.name
+      WORKFLOWS_TABLE_NAME               = aws_dynamodb_table.workflows.name
+      OPENAI_API_KEY                     = var.openai_api_key
+      APPSYNC_EVENTS_HTTP_ENDPOINT       = "https://${aws_appsync_api.workflow_events.dns["HTTP"]}"
+      APPSYNC_EVENTS_API_KEY             = aws_appsync_api_key.workflow_events_key.key
+      WORKFLOW_UPDATES_CHANNEL_NAMESPACE = aws_appsync_channel_namespace.workflow_updates.name
     }
   }
 
@@ -115,10 +138,10 @@ resource "aws_lambda_function" "execution_worker" {
 
   environment {
     variables = {
-      EXECUTIONS_TABLE_NAME                = aws_dynamodb_table.executions.name
-      APPSYNC_EVENTS_HTTP_ENDPOINT          = "https://${aws_appsync_api.workflow_events.dns["HTTP"]}"
-      APPSYNC_EVENTS_API_KEY               = aws_appsync_api_key.workflow_events_key.key
-      EXECUTION_UPDATES_CHANNEL_NAMESPACE  = aws_appsync_channel_namespace.execution_updates.name
+      EXECUTIONS_TABLE_NAME               = aws_dynamodb_table.executions.name
+      APPSYNC_EVENTS_HTTP_ENDPOINT        = "https://${aws_appsync_api.workflow_events.dns["HTTP"]}"
+      APPSYNC_EVENTS_API_KEY              = aws_appsync_api_key.workflow_events_key.key
+      EXECUTION_UPDATES_CHANNEL_NAMESPACE = aws_appsync_channel_namespace.execution_updates.name
     }
   }
 

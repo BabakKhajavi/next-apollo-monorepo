@@ -530,3 +530,68 @@ pnpm nx run graphql-contracts:codegen
 pnpm nx run design-system:build-storybook
 pnpm nx run-many -t build lint -p web apollo-client graphql-contracts design-system
 ```
+
+## 31. Web hosting infra — ECS Fargate + CloudFront/S3, separate from backend Terraform; Provisioned Concurrency on `api`
+
+Brainstormed with the user before building (see `/Users/babak_khajavi/.claude/plans/structured-wandering-dawn.md`): original ask was CloudFront+S3+ECS Fargate; considered OpenNext-on-Lambda and Amplify Hosting as alternatives but the user explicitly wants deterministic per-request latency (no cold starts) for the web app, which rules both out. That same reasoning extends to the backend: RSC pages call the `api` Lambda server-side on every render, so a Fargate web server alone doesn't remove cold starts from the request path — user chose Provisioned Concurrency on `api` (not SnapStart, not leaving it as-is) to close that gap too.
+
+User explicitly asked for the web infra to live in its own folder, separate from the backend's Terraform — first drafted under `apps/web/infra/terraform/`, then moved to top-level `infra/terraform-web/` (sibling to `infra/terraform` and `infra/terraform-bootstrap`, matching the existing root `infra/` convention) once the user clarified they meant root-level, not per-app. The user then asked for the backend's Terraform to move the same way for symmetry, so `infra/terraform/` → `infra/terraform-backend/` (plain `git mv`, all `.tf`/lock file contents unchanged; the S3 backend's state key stays `api/terraform.tfstate` — renaming that would require a real `terraform state` migration against already-deployed infra, out of scope for a folder rename). OIDC roles were likewise split into `oidc-backend.tf` (renamed from `oidc.tf`) and a new `oidc-web.tf` within `infra/terraform-bootstrap/`, rather than one file holding both apps' roles.
+
+- `apps/web/next.config.ts` — added `output: "standalone"`.
+- `apps/web/Dockerfile` (new) — multi-stage, `node:22-slim`, `NEXT_PUBLIC_*` vars as build ARGs (baked in), bare `GRAPHQL_URI` deliberately omitted (runtime env instead, read by RSC at request time so it can change without a rebuild).
+- `.dockerignore` (new, repo root).
+- `infra/terraform-web/` (new root module, own state key `web/terraform.tfstate` in the same S3 bucket): `provider.tf`, `variables.tf`, `vpc.tf` (2 public subnets, no NAT Gateway, ALB security group restricted to CloudFront's managed prefix list), `ecr.tf`, `alb.tf`, `ecs.tf` (Fargate cluster/task/service, `min_capacity=1` so there's always a warm task, CPU-based autoscaling to `max_capacity=3`), `s3.tf` + `cloudfront.tf` (OAC, two origins — S3 for `_next/static/*` with a 1yr TTL, ALB for everything else uncached), `iam.tf`, `outputs.tf`.
+- `infra/terraform-backend/lambda.tf` — added `aws_lambda_alias.api_live` (Provisioned Concurrency target, `function_version` left out of Terraform's control via `ignore_changes` since CI repoints it) and `aws_lambda_provisioned_concurrency_config` (1 unit).
+- `infra/terraform-backend/apigateway.tf` — integration + invoke permission now target the `api_live` alias, not the bare function/`$LATEST`.
+- `infra/terraform-bootstrap/oidc.tf` → renamed `oidc-backend.tf`; added `lambda:PublishVersion`/`UpdateAlias`/`GetAlias` (scoped to `nam-api`) to `github_lambda_deploy`.
+- `infra/terraform-bootstrap/oidc-web.tf` (new) — `github-terraform-web-plan`/`-apply` roles (same shape as the backend's plan/apply roles) and `github-web-deploy` (ECR push, ECS register/update, S3 sync, CloudFront invalidation — all scoped to the `nam-web` resources).
+- `.github/workflows/terraform-web-plan.yml` / `terraform-web-apply.yml` (new) — mirror `terraform-plan.yml`/`terraform-apply.yml`, scoped to `infra/terraform-web/**`, own `terraform-web` concurrency group (independent of the backend's `terraform` group — different state files, safe to run in parallel).
+- `.github/workflows/deploy-backend.yml` — after `api`'s `update-function-code --publish`, captures the returned version and runs `aws lambda update-alias --name live` to repoint it.
+- `.github/workflows/deploy-web.yml` — replaced the build-only placeholder: `nx run-many -t lint build -p web` (fast-fail) → Docker build/push to ECR → register a new ECS task-def revision (`describe-task-definition` + `jq` image-field patch + `register-task-definition`) → `update-service --force-new-deployment` + `wait services-stable` → `aws s3 sync` `.next/static`/`public` to the static bucket → `cloudfront create-invalidation` (skipped until the `CLOUDFRONT_DISTRIBUTION_ID` repo variable is set, which can't happen until after the first `terraform-web-apply`).
+
+Verified locally before considering this done: all three Terraform roots (`infra/terraform-backend`, `infra/terraform-web`, `infra/terraform-bootstrap`) pass `terraform validate`; `pnpm nx build web` succeeds with `output: "standalone"` and produces `apps/web/.next/standalone/apps/web/server.js`; `docker build -f apps/web/Dockerfile .` succeeds and the resulting image, run with `docker run -p 3100:3000`, serves a real `200` HTML response on `/`.
+
+**Not yet done** (needs the user, since `terraform apply`/`aws` credential setup is outside what this session can run): `terraform apply` on `infra/terraform-web` for the first time; applying the updated `infra/terraform-bootstrap` so the new OIDC roles actually exist; setting the `CLOUDFRONT_DISTRIBUTION_ID` repo variable from that apply's output; a real `deploy-web.yml` run to confirm the Docker image builds, pushes, and serves correctly on ECS.
+
+```
+mkdir -p infra/terraform-web && git mv apps/web/infra/terraform/* infra/terraform-web/   # moved to root per user clarification
+rmdir apps/web/infra/terraform apps/web/infra
+git mv infra/terraform-bootstrap/oidc.tf infra/terraform-bootstrap/oidc-backend.tf
+git mv infra/terraform infra/terraform-backend                                           # symmetry with terraform-web, per user request
+terraform fmt -recursive                                                                 # infra/terraform-backend, infra/terraform-web, infra/terraform-bootstrap
+terraform validate                                                                       # all 3 roots, via terraform init -backend=false
+pnpm nx build web
+docker build -f apps/web/Dockerfile --build-arg NEXT_PUBLIC_GRAPHQL_URI=https://example.com/graphql -t nam-web-test .
+docker run -d --rm -p 3100:3000 -e GRAPHQL_URI=https://example.com/graphql --name nam-web-test nam-web-test
+curl http://localhost:3100/   # HTTP 200
+docker stop nam-web-test && docker rmi nam-web-test
+```
+
+### Follow-up: local `terraform plan` hit `InvalidClientTokenId`; added the 5 missing IAM policies + root-level `tf:*` npm scripts
+
+User's local `terraform plan` in `infra/terraform-bootstrap` failed with `InvalidClientTokenId` — the AWS provider has no `profile` set, so it was using the shared-credentials-file's `default` profile, which is stale; `zaplite-dev` (verified via `aws sts get-caller-identity --profile zaplite-dev`) is the valid one. Separately, confirmed (via `aws iam list-attached-user-policies`/`list-attached-group-policies` on `zaplite-main-developer`) that 5 policies `infra/terraform-web` needs were missing entirely: `AmazonVPCFullAccess`, `ElasticLoadBalancingFullAccess`, `AmazonECS_FullAccess`, `AmazonEC2ContainerRegistryFullAccess`, `CloudFrontFullAccess` — user attached all 5 via the console (confirmed in a follow-up screenshot). User also confirmed the three Terraform roots have no dependency on each other (no `terraform_remote_state` between them) — order-independent, run any order.
+
+Added `tf:bootstrap:plan/:apply`, `tf:backend:plan/:apply`, `tf:web:plan/:apply` to root `package.json` so the user doesn't have to memorize `cd` + `terraform` invocations each time — each pins `AWS_PROFILE=zaplite-dev` (fixing the credential issue above), `tf:backend:*` runs `bundle:lambdas` first (same reason `terraform-plan.yml`/`terraform-apply.yml` do). `TF_VAR_openai_api_key`/`TF_VAR_graphql_uri` are intentionally left for the user to export beforehand (not hardcoded into the script) — terraform prompts interactively if they're missing.
+
+```
+aws sts get-caller-identity --profile zaplite-dev   # confirmed zaplite-dev is the valid profile, default is not
+aws iam list-attached-user-policies --user-name zaplite-main-developer --profile zaplite-dev
+aws iam list-attached-group-policies --group-name zaplit-developer --profile zaplite-dev
+# user attached AmazonVPCFullAccess, ElasticLoadBalancingFullAccess, AmazonECS_FullAccess,
+# AmazonEC2ContainerRegistryFullAccess, CloudFrontFullAccess via the IAM console
+```
+
+### Follow-up: `infra/terraform-web` fully applied; 2 more IAM gaps found and fixed; `CLOUDFRONT_DISTRIBUTION_ID` repo var actually created as `STAGE_CLOUDFRONT_DIST`
+
+User ran `terraform apply` for real. Hit two more permission gaps beyond the prefix-list one (none of the 5 managed policies cover these — added as narrow inline policies, same pattern, both locally on `zaplite-main-developer` and mirrored into `github_terraform_web_apply` in `infra/terraform-bootstrap/oidc-web.tf` for CI parity): `ec2:DescribeManagedPrefixLists`/`GetManagedPrefixListEntries` (ALB SG's CloudFront-prefix-list lookup — `vpc.tf`) and `application-autoscaling:*` (`aws_appautoscaling_target`/`policy` — `ecs.tf`; no managed policy covers this service at all). Apply completed: 28/28 resources, including a harmless destroy+recreate of `aws_appautoscaling_target.web` (Terraform had marked it "tainted" from the earlier failed run, before the autoscaling permission existed).
+
+User created the GitHub repo variable as `STAGE_CLOUDFRONT_DIST`, not `CLOUDFRONT_DISTRIBUTION_ID` as originally named in `deploy-web.yml` — updated the workflow's `Invalidate CloudFront` step to match the name actually used, rather than asking the user to rename the repo variable.
+
+Also fixed in this stretch: local `terraform plan`/`apply` were failing with `InvalidClientTokenId` because the AWS provider has no explicit `profile`, so it fell back to the shared-credentials-file's `default` profile (stale) instead of `zaplite-dev` (the valid one, confirmed via `aws sts get-caller-identity --profile zaplite-dev`). Fixed two ways: the `tf:*` npm scripts (added earlier) hardcode `AWS_PROFILE=zaplite-dev`, and for ad-hoc commands, a `chpwd` zsh hook in `~/.zshrc` auto-exports/unsets `AWS_PROFILE=zaplite-dev` on entering/leaving this repo directory (a `direnv`-based version was tried first but abandoned — Homebrew's `direnv` install failed compiling `readline` from source due to broken/outdated Xcode Command Line Tools on this Intel Mac; the zsh hook needs no compiler and does the same job).
+
+```
+aws iam put-user-policy --user-name zaplite-main-developer --profile zaplite-dev --policy-name ReadCloudFrontPrefixList --policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["ec2:DescribeManagedPrefixLists","ec2:GetManagedPrefixListEntries"],"Resource":"*"}]}'
+aws iam put-user-policy --user-name zaplite-main-developer --profile zaplite-dev --policy-name ECSAutoScaling --policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"application-autoscaling:*","Resource":"*"}]}'
+cd infra/terraform-web && AWS_PROFILE=zaplite-dev terraform apply   # 28 resources, real AWS infra now live
+# GitHub repo variable added: STAGE_CLOUDFRONT_DIST = <CloudFront distribution id>
+```

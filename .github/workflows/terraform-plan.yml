@@ -3,7 +3,7 @@ name: Terraform Plan
 on:
   pull_request:
     paths:
-      - "infra/terraform/**"
+      - "infra/terraform-backend/**"
   workflow_dispatch: {}
 
 permissions:
@@ -44,21 +44,21 @@ jobs:
 
       - name: Terraform fmt
         id: fmt
-        working-directory: infra/terraform
+        working-directory: infra/terraform-backend
         run: terraform fmt -check -recursive
         continue-on-error: true
 
       - name: Terraform Init
-        working-directory: infra/terraform
+        working-directory: infra/terraform-backend
         run: terraform init -input=false
 
       - name: Terraform Validate
-        working-directory: infra/terraform
+        working-directory: infra/terraform-backend
         run: terraform validate -no-color
 
       - name: Terraform Plan
         id: plan
-        working-directory: infra/terraform
+        working-directory: infra/terraform-backend
         run: terraform plan -no-color -input=false
         env:
           TF_VAR_openai_api_key: ${{ secrets.OPENAI_API_KEY }}

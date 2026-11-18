@@ -117,7 +117,7 @@ resource "aws_iam_role_policy_attachment" "github_terraform_apply_sqs" {
 # State bucket read/write — not covered by the service policies above.
 data "aws_iam_policy_document" "github_terraform_apply_state" {
   statement {
-    actions   = ["s3:GetObject", "s3:PutObject", "s3:ListBucket"]
+    actions = ["s3:GetObject", "s3:PutObject", "s3:ListBucket"]
     resources = [
       aws_s3_bucket.terraform_state.arn,
       "${aws_s3_bucket.terraform_state.arn}/*",
@@ -178,6 +178,17 @@ data "aws_iam_policy_document" "github_lambda_deploy" {
       "arn:aws:lambda:us-east-1:${var.account_id}:function:nam-api",
       "arn:aws:lambda:us-east-1:${var.account_id}:function:nam-ai-worker",
       "arn:aws:lambda:us-east-1:${var.account_id}:function:nam-execution-worker",
+    ]
+  }
+
+  # api only: publish a numbered version after each code update, then
+  # repoint the `live` alias (Provisioned Concurrency sits on that alias,
+  # not on $LATEST — see infra/terraform-backend/lambda.tf).
+  statement {
+    actions = ["lambda:PublishVersion", "lambda:UpdateAlias", "lambda:GetAlias"]
+    resources = [
+      "arn:aws:lambda:us-east-1:${var.account_id}:function:nam-api",
+      "arn:aws:lambda:us-east-1:${var.account_id}:function:nam-api:*",
     ]
   }
 }

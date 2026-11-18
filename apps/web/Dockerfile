@@ -11,16 +11,14 @@ WORKDIR /repo
 
 RUN corepack enable
 
-COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
-COPY apps/web/package.json apps/web/package.json
-COPY apps/ai-worker/package.json apps/ai-worker/package.json
-COPY apps/api/package.json apps/api/package.json
-COPY apps/execution-worker/package.json apps/execution-worker/package.json
-COPY packages/ packages/
+# pnpm's injectWorkspacePackages lockfile check wants every workspace
+# project's package.json present, not just this app's — a partial COPY
+# for layer caching trips ERR_PNPM_LOCKFILE_CONFIG_MISMATCH. Copy
+# everything up front instead; .dockerignore keeps node_modules/.next/
+# etc out of the build context.
+COPY . .
 
 RUN pnpm install --frozen-lockfile
-
-COPY . .
 
 ARG NEXT_PUBLIC_GRAPHQL_URI
 ARG NEXT_PUBLIC_APPSYNC_EVENTS_HTTP_ENDPOINT

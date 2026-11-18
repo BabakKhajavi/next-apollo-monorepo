@@ -8,6 +8,7 @@ Technology: Nx + pnpm + Next.js + NestJS + Apollo GraphQL + LangChain + AWS
 - Atomic Design and Storybook live together.
 - Apollo Client is a separate package; server-side Apollo lives directly in `apps/api` (single consumer, no standalone package).
 - AppSync Events handles real-time communication.
+- `web` is hosted on ECS Fargate (standalone Next.js server, Dockerfile at `apps/web/Dockerfile`) behind CloudFront + S3 for static assets — deliberately not serverless like the rest of the backend: a `min 1` Fargate task gives deterministic per-request latency for SSR/RSC, which matters more here than the backend's scale-to-zero cost savings. See `infra/terraform-web/`.
 
 ```
 next-apollo-monorepo/
@@ -102,7 +103,7 @@ next-apollo-monorepo/
 │   └── config/                 # Shared tooling configuration
 │
 ├── infra/
-│   ├── terraform/               # Real infra, deployed and verified against real AWS —
+│   ├── terraform-backend/       # Real infra, deployed and verified against real AWS —
 │                                 #   DynamoDB (nam-workflows, nam-executions + GSIs), 3
 │                                 #   Lambdas (ai-worker/execution-worker esbuild-bundled
 │                                 #   to dist-lambda/handler.js; api packaged via `nest
@@ -113,39 +114,71 @@ next-apollo-monorepo/
 │                                 #   var.project_name), SQS (workflow-generation +
 │                                 #   workflow-execution queues + DLQs), AppSync Events
 │                                 #   API (API_KEY auth, workflow-updates +
-│                                 #   execution-updates channel namespaces). State is
-│                                 #   remote (S3, versioned + encrypted + native
-│                                 #   locking) — see infra/terraform-bootstrap/ below.
+│                                 #   execution-updates channel namespaces). `api`'s
+│                                 #   Lambda also has a `live` alias with Provisioned
+│                                 #   Concurrency (1 unit) — RSC pages call `api`
+│                                 #   server-side on every render, so this alias (not
+│                                 #   $LATEST) is what API Gateway's integration
+│                                 #   targets, removing cold-start latency from that
+│                                 #   path; deploy-backend.yml repoints it after every
+│                                 #   `api` deploy. State is remote (S3, versioned +
+│                                 #   encrypted + native locking) — see
+│                                 #   infra/terraform-bootstrap/ below.
+│   ├── terraform-web/           # Separate root module/state from infra/terraform-backend —
+│                                 #   the `web` app's own hosting infra, applied
+│                                 #   independently of the backend. VPC (public
+│                                 #   subnets only, no NAT — Fargate tasks get a
+│                                 #   public IP), ALB (HTTP, reachable only from
+│                                 #   CloudFront's managed prefix list), ECS Fargate
+│                                 #   cluster/service/task running the Next.js
+│                                 #   standalone server (min 1 task — no scale-out
+│                                 #   cold start — CPU-based autoscaling up to 3),
+│                                 #   ECR repo for the image, S3 bucket + CloudFront
+│                                 #   distribution (OAC, not legacy OAI) serving
+│                                 #   `_next/static/*` with a 1yr TTL while the ALB
+│                                 #   origin handles everything else (SSR/RSC,
+│                                 #   uncached). No custom domain — CloudFront's
+│                                 #   default `*.cloudfront.net` domain.
 │   └── terraform-bootstrap/     # Separate root module, own local state (chicken-and-
 │                                 #   egg: the state bucket can't manage its own
-│                                 #   backend). Creates the S3 state bucket and the two
-│                                 #   GitHub OIDC IAM roles CI assumes (github-terraform-
-│                                 #   plan: read-only, any PR; github-terraform-apply:
-│                                 #   full infra write, push-to-main only). Applied
-│                                 #   manually, rarely touched.
+│                                 #   backend). Creates the S3 state bucket and the
+│                                 #   GitHub OIDC IAM roles CI assumes — one set per
+│                                 #   app (github-terraform-plan/-apply for the
+│                                 #   backend, github-terraform-web-plan/-apply for
+│                                 #   web, each read-only on PRs / full-write on push
+│                                 #   to main only) plus the narrower app-deploy roles
+│                                 #   (github-lambda-deploy, github-web-deploy).
+│                                 #   Applied manually, rarely touched.
 │
 ├── docker-compose.yml          # DynamoDB Local for dev (apps/api)
 │
 ├── tools/                      # Nx generators and scripts
 │
 ├── .github/                    # CI/CD workflows — ci.yml (lint/test/build on every
-│                                 #   push/PR), terraform-plan.yml (PR against
-│                                 #   infra/terraform/**, posts plan as a PR comment),
-│                                 #   terraform-apply.yml (push to main, gated behind
-│                                 #   the `production` GitHub Environment's required
-│                                 #   reviewers), deploy-backend.yml (push to main or
-│                                 #   staging, or manual dispatch — one `detect` job
-│                                 #   runs `nx show projects --affected -t bundle` to
-│                                 #   find which of api/ai-worker/execution-worker
-│                                 #   actually changed, a matrixed `deploy` job then
-│                                 #   bundles + `aws lambda update-function-code` only
-│                                 #   those; Terraform's Lambda resources use
-│                                 #   `lifecycle.ignore_changes` on their code so this
-│                                 #   pipeline and `terraform apply` don't fight over
-│                                 #   source_code_hash), deploy-web.yml (build-only, not
-│                                 #   wired to an actual deploy yet), release.yml. Both
-│                                 #   Terraform workflows and deploy-backend.yml assume an
-│                                 #   OIDC role — no static AWS keys in CI.
+│                                 #   push/PR), terraform-plan.yml/terraform-apply.yml
+│                                 #   (infra/terraform-backend/**, backend), terraform-web-plan.yml/
+│                                 #   terraform-web-apply.yml (infra/terraform-web/**, web —
+│                                 #   same shape, separate concurrency group, since the two
+│                                 #   never share a state file), both apply workflows gated
+│                                 #   behind the `production` GitHub Environment's required
+│                                 #   reviewers. deploy-backend.yml (push to main or staging,
+│                                 #   or manual dispatch — one `detect` job runs `nx show
+│                                 #   projects --affected -t bundle` to find which of
+│                                 #   api/ai-worker/execution-worker actually changed, a
+│                                 #   matrixed `deploy` job then bundles + `aws lambda
+│                                 #   update-function-code --publish` only those, and for
+│                                 #   `api` specifically repoints its `live` alias at the
+│                                 #   newly published version afterward; Terraform's Lambda
+│                                 #   resources use `lifecycle.ignore_changes` on their code
+│                                 #   so this pipeline and `terraform apply` don't fight over
+│                                 #   source_code_hash). deploy-web.yml (push to main/staging —
+│                                 #   nx build+lint, Docker build/push to ECR, register a new
+│                                 #   ECS task-def revision, `update-service
+│                                 #   --force-new-deployment` + wait for stability, sync
+│                                 #   `.next/static`/`public` to the static S3 bucket,
+│                                 #   CloudFront invalidation). release.yml. All
+│                                 #   Terraform/deploy workflows assume an OIDC role each —
+│                                 #   no static AWS keys in CI.
 │
 ├── nx.json
 ├── pnpm-workspace.yaml
@@ -192,7 +225,13 @@ pnpm run affected:list    # plain text list of affected project names
 pnpm run reset            # clear Nx cache/daemon when something looks stale
 pnpm run release:dry      # preview version bumps/changelogs, no writes
 pnpm run release          # bump versions, write changelogs, commit + tag (conventional commits, independent per-project)
+
+pnpm run tf:bootstrap:plan / :apply   # infra/terraform-bootstrap — state bucket + OIDC roles
+pnpm run tf:backend:plan / :apply     # infra/terraform-backend — needs TF_VAR_openai_api_key set
+pnpm run tf:web:plan / :apply         # infra/terraform-web — needs TF_VAR_graphql_uri set
 ```
+
+The three Terraform roots are independent (no root reads another's state) — run them in any order. All three scripts pin `AWS_PROFILE=zaplite-dev`, since the shared-credentials-file's `default` profile isn't valid for this account (`terraform-backend`/`-web` need `TF_VAR_openai_api_key`/`TF_VAR_graphql_uri` exported first, or terraform prompts for them).
 
 Versioning is **never automatic per commit** — it only runs when triggered. CI release (`.github/workflows/release.yml`) fires on manual `workflow_dispatch` or a push to `release/**`, not on every merge to `main`, so version tags stay frozen during normal development and only move at an explicit promotion point.
 

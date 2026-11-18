@@ -8,6 +8,22 @@ on:
       - "packages/**"
   workflow_dispatch: {}
 
+permissions:
+  id-token: write # required for OIDC
+  contents: read
+
+concurrency:
+  group: deploy-web-${{ github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: nam-web
+  ECS_CLUSTER: nam-web
+  ECS_SERVICE: nam-web
+  ECS_TASK_FAMILY: nam-web
+  STATIC_BUCKET: nam-web-static-314146325814
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -20,18 +36,72 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
 
-      - run: pnpm nx build web
+      # Fast-fail on lint/type/build errors before spending time on a
+      # Docker build that would just fail the same way, later.
+      - run: pnpm nx run-many -t lint build -p web
         env:
-          # Repo Variables/Secrets, not the committed apps/web/.env.staging —
-          # lets these change (e.g. a future custom domain) without a code
-          # change. Swap to per-environment (staging vs production) values
-          # once a second environment actually exists.
-          # Next.js needs two separate env var names for the same value:
-          # NEXT_PUBLIC_* gets bundled into browser JS, the bare name stays
-          # server-only (RSC) — one GitHub variable, mapped to both.
           NEXT_PUBLIC_GRAPHQL_URI: ${{ vars.GRAPHQL_URI }}
           GRAPHQL_URI: ${{ vars.GRAPHQL_URI }}
           NEXT_PUBLIC_APPSYNC_EVENTS_HTTP_ENDPOINT: ${{ vars.NEXT_PUBLIC_APPSYNC_EVENTS_HTTP_ENDPOINT }}
           NEXT_PUBLIC_APPSYNC_EVENTS_API_KEY: ${{ secrets.NEXT_PUBLIC_APPSYNC_EVENTS_API_KEY }}
           NEXT_PUBLIC_WORKFLOW_UPDATES_CHANNEL_NAMESPACE: ${{ vars.NEXT_PUBLIC_WORKFLOW_UPDATES_CHANNEL_NAMESPACE }}
           NEXT_PUBLIC_EXECUTION_UPDATES_CHANNEL_NAMESPACE: ${{ vars.NEXT_PUBLIC_EXECUTION_UPDATES_CHANNEL_NAMESPACE }}
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::314146325814:role/github-web-deploy
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: aws-actions/amazon-ecr-login@v2
+        id: ecr-login
+
+      - name: Build and push image
+        id: build
+        env:
+          REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+        run: |
+          image="$REGISTRY/$ECR_REPOSITORY:${{ github.sha }}"
+          docker build \
+            -f apps/web/Dockerfile \
+            --build-arg NEXT_PUBLIC_GRAPHQL_URI="${{ vars.GRAPHQL_URI }}" \
+            --build-arg NEXT_PUBLIC_APPSYNC_EVENTS_HTTP_ENDPOINT="${{ vars.NEXT_PUBLIC_APPSYNC_EVENTS_HTTP_ENDPOINT }}" \
+            --build-arg NEXT_PUBLIC_APPSYNC_EVENTS_API_KEY="${{ secrets.NEXT_PUBLIC_APPSYNC_EVENTS_API_KEY }}" \
+            --build-arg NEXT_PUBLIC_WORKFLOW_UPDATES_CHANNEL_NAMESPACE="${{ vars.NEXT_PUBLIC_WORKFLOW_UPDATES_CHANNEL_NAMESPACE }}" \
+            --build-arg NEXT_PUBLIC_EXECUTION_UPDATES_CHANNEL_NAMESPACE="${{ vars.NEXT_PUBLIC_EXECUTION_UPDATES_CHANNEL_NAMESPACE }}" \
+            -t "$image" .
+          docker push "$image"
+          echo "image=$image" >> "$GITHUB_OUTPUT"
+
+      - name: Register new task definition revision
+        id: task-def
+        run: |
+          current=$(aws ecs describe-task-definition --task-definition "$ECS_TASK_FAMILY" --query taskDefinition)
+          new=$(echo "$current" | jq --arg IMAGE "${{ steps.build.outputs.image }}" \
+            '.containerDefinitions[0].image = $IMAGE |
+             del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)')
+          arn=$(aws ecs register-task-definition --cli-input-json "$new" --query 'taskDefinition.taskDefinitionArn' --output text)
+          echo "arn=$arn" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy to ECS and wait for stability
+        run: |
+          aws ecs update-service \
+            --cluster "$ECS_CLUSTER" \
+            --service "$ECS_SERVICE" \
+            --task-definition "${{ steps.task-def.outputs.arn }}" \
+            --force-new-deployment
+          aws ecs wait services-stable --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE"
+
+      # _next/static filenames are content-hashed, so a plain sync with
+      # long-lived caching (cloudfront.tf sets 1yr TTL on this path) never
+      # serves stale content; public/ is small and rarely changes.
+      - name: Sync static assets to S3
+        run: |
+          aws s3 sync apps/web/.next/static "s3://$STATIC_BUCKET/_next/static" --delete
+          aws s3 sync apps/web/public "s3://$STATIC_BUCKET" --delete --exclude "_next/*"
+
+      - name: Invalidate CloudFront
+        if: vars.STAGE_CLOUDFRONT_DIST != ''
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${{ vars.STAGE_CLOUDFRONT_DIST }}" \
+            --paths "/*"

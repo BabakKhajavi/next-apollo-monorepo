@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - "infra/terraform/**"
+      - "infra/terraform-backend/**"
   workflow_dispatch: {}
 
 permissions:
@@ -46,11 +46,11 @@ jobs:
           terraform_version: "1.17.2"
 
       - name: Terraform Init
-        working-directory: infra/terraform
+        working-directory: infra/terraform-backend
         run: terraform init -input=false
 
       - name: Terraform Apply
-        working-directory: infra/terraform
+        working-directory: infra/terraform-backend
         run: terraform apply -auto-approve -input=false
         env:
           TF_VAR_openai_api_key: ${{ secrets.OPENAI_API_KEY }}

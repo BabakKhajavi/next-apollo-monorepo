@@ -23,7 +23,13 @@
     "reset": "nx reset",
     "bundle:lambdas": "nx run-many -t bundle -p api ai-worker execution-worker",
     "release:dry": "nx release --dry-run",
-    "release": "nx release"
+    "release": "nx release",
+    "tf:bootstrap:plan": "cd infra/terraform-bootstrap && AWS_PROFILE=zaplite-dev terraform init -input=false && AWS_PROFILE=zaplite-dev terraform plan",
+    "tf:bootstrap:apply": "cd infra/terraform-bootstrap && AWS_PROFILE=zaplite-dev terraform init -input=false && AWS_PROFILE=zaplite-dev terraform apply",
+    "tf:backend:plan": "pnpm run bundle:lambdas && cd infra/terraform-backend && AWS_PROFILE=zaplite-dev terraform init -input=false && AWS_PROFILE=zaplite-dev terraform plan",
+    "tf:backend:apply": "pnpm run bundle:lambdas && cd infra/terraform-backend && AWS_PROFILE=zaplite-dev terraform init -input=false && AWS_PROFILE=zaplite-dev terraform apply",
+    "tf:web:plan": "cd infra/terraform-web && AWS_PROFILE=zaplite-dev terraform init -input=false && AWS_PROFILE=zaplite-dev terraform plan",
+    "tf:web:apply": "cd infra/terraform-web && AWS_PROFILE=zaplite-dev terraform init -input=false && AWS_PROFILE=zaplite-dev terraform apply"
   },
   "devDependencies": {
     "@nx/eslint": "24.0.5",

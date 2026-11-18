@@ -77,7 +77,7 @@ jobs:
       - run: pnpm nx run-many -t lint build -p ${{ matrix.app }}
 
       # api -> dist-lambda-pkg/ (nest build + pnpm deploy --prod, not
-      # esbuild — see infra/terraform/lambda.tf for why). ai-worker/
+      # esbuild — see infra/terraform-backend/lambda.tf for why). ai-worker/
       # execution-worker -> dist-lambda/handler.js (single esbuild file).
       - run: pnpm nx run ${{ matrix.app }}:bundle
 
@@ -87,6 +87,7 @@ jobs:
           aws-region: us-east-1
 
       - name: Zip and deploy
+        id: deploy
         run: |
           case "${{ matrix.app }}" in
             api)
@@ -102,7 +103,22 @@ jobs:
               zip -q /tmp/deploy.zip handler.js
               ;;
           esac
-          aws lambda update-function-code \
+          version=$(aws lambda update-function-code \
             --function-name "nam-${{ matrix.app }}" \
             --zip-file fileb:///tmp/deploy.zip \
-            --publish
+            --publish \
+            --query Version --output text)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      # RSC pages call api server-side on every render — Provisioned
+      # Concurrency sits on the `live` alias (see infra/terraform-backend/lambda.tf),
+      # not on $LATEST, so traffic only gets the warm-start benefit once
+      # this alias points at the version just published above.
+      - name: Repoint api's live alias
+        if: matrix.app == 'api'
+        run: |
+          aws lambda wait function-updated --function-name nam-api
+          aws lambda update-alias \
+            --function-name nam-api \
+            --name live \
+            --function-version "${{ steps.deploy.outputs.version }}"
