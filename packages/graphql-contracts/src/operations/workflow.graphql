@@ -1,10 +1,48 @@
-query Workflows {
-  workflows {
+query Workflows($first: Int, $after: String) {
+  workflows(first: $first, after: $after) {
     items {
       id
       name
       status
+      createdAt
     }
     nextCursor
+  }
+}
+
+query Workflow($id: ID!) {
+  workflow(id: $id) {
+    id
+    name
+    status
+    definition
+    createdAt
+    updatedAt
+  }
+}
+
+mutation GenerateWorkflow($prompt: String!) {
+  generateWorkflow(prompt: $prompt) {
+    id
+    name
+    status
+  }
+}
+
+mutation ApproveWorkflow($id: ID!) {
+  approveWorkflow(id: $id) {
+    id
+    status
+  }
+}
+
+mutation DeleteWorkflow($id: ID!) {
+  deleteWorkflow(id: $id)
+}
+
+mutation ExecuteWorkflow($workflowId: ID!) {
+  executeWorkflow(workflowId: $workflowId) {
+    id
+    status
   }
 }

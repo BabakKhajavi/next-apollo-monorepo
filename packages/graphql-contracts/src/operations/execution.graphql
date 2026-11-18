@@ -1,0 +1,23 @@
+query Executions($workflowId: ID!, $first: Int, $after: String) {
+  executions(workflowId: $workflowId, first: $first, after: $after) {
+    items {
+      id
+      status
+      error
+      createdAt
+      updatedAt
+    }
+    nextCursor
+  }
+}
+
+query Execution($id: ID!) {
+  execution(id: $id) {
+    id
+    workflowId
+    status
+    error
+    createdAt
+    updatedAt
+  }
+}

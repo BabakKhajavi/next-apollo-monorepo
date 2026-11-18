@@ -14,9 +14,18 @@
       }
     },
     "storybook": {
-      "executor": "@nx/storybook:storybook",
+      "executor": "nx:run-commands",
       "options": {
-        "configDir": "packages/design-system/.storybook"
+        "command": "storybook dev -p 6006 --config-dir .storybook",
+        "cwd": "packages/design-system"
+      }
+    },
+    "build-storybook": {
+      "executor": "nx:run-commands",
+      "outputs": ["{projectRoot}/../../dist/storybook/design-system"],
+      "options": {
+        "command": "storybook build --config-dir .storybook --output-dir ../../dist/storybook/design-system",
+        "cwd": "packages/design-system"
       }
     }
   }

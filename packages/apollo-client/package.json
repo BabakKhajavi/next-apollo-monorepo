@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./providers": "./src/providers/index.ts",
-    "./nextjs": "./src/nextjs/index.ts"
+    "./nextjs": "./src/nextjs/index.ts",
+    "./realtime": "./src/realtime/index.ts"
   },
   "peerDependencies": {
     "@apollo/client": "^4.3.0",

@@ -1,0 +1,10 @@
+query DashboardStats {
+  dashboardStats {
+    totalWorkflows
+    totalExecutions
+    executionsByStatus {
+      status
+      count
+    }
+  }
+}

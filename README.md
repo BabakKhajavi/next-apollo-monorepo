@@ -13,12 +13,19 @@ Technology: Nx + pnpm + Next.js + NestJS + Apollo GraphQL + LangChain + AWS
 next-apollo-monorepo/
 │
 ├── apps/
-│   ├── web/                    # Next.js App Router
+│   ├── web/                    # Next.js App Router — demo UI for the backend
 │   │   └── src/
-│   │       ├── app/
-│   │       ├── features/
-│   │       ├── providers/
-│   │       └── lib/
+│   │       ├── app/            # /, /workflows, /workflows/[id] — RSC pages,
+│   │       │                   #   PreloadQuery+useSuspenseQuery for streamed
+│   │       │                   #   Client Component sections (Suspense)
+│   │       ├── features/       # workflows/: GenerateWorkflowForm, Approve/
+│   │       │                   #   ExecuteButton, WorkflowHeader, ExecutionsList
+│   │       │                   #   (all live-updated via AppSync Events ->
+│   │       │                   #   Apollo cache.modify, no polling), status-tone
+│   │       │                   #   mapping, realtime.ts (channel names + typed
+│   │       │                   #   event payloads)
+│   │       ├── providers/      # ApolloProvider (browser, mounted in layout.tsx)
+│   │       └── lib/            # apollo-rsc.ts (RSC-scoped client)
 │   │
 │   ├── api/                    # NestJS + Apollo Server 5 (code-first GraphQL)
 │   │   └── src/
@@ -72,10 +79,20 @@ next-apollo-monorepo/
 │                                 #   no SES/sandboxed exec wired up for the demo.
 │
 ├── packages/
-│   ├── design-system/          # Atomic Design + Storybook
-│   ├── apollo-client/          # Apollo Client + Next.js SSR
+│   ├── design-system/          # Badge, Button (real components, not stubs) +
+│   │                           #   Storybook (storybook CLI directly via
+│   │                           #   nx:run-commands — @nx/storybook 24.0.5 ships
+│   │                           #   no working executors)
+│   ├── apollo-client/          # Apollo Client + Next.js SSR; ./realtime subpath
+│   │                           #   is a hand-rolled AppSync Events browser client
+│   │                           #   (no published client library exists outside
+│   │                           #   the much heavier aws-amplify) — wire protocol
+│   │                           #   verified against the real deployed API before
+│   │                           #   being wired into React
 │   ├── graphql-contracts/      # Generated schema.graphql + typed operations
-│   │                           #   (GraphQL Code Generator, TypedDocumentNode)
+│   │                           #   (GraphQL Code Generator, TypedDocumentNode) —
+│   │                           #   single codegen source for apps/web too, no
+│   │                           #   separate per-app codegen config
 │   ├── ai-helper/              # LangChain model factory (createChatModel: anthropic/
 │   │                           #   openai/gemini) + generateStructured() Zod helper —
 │   │                           #   provider-agnostic, reusable by any future AI feature
