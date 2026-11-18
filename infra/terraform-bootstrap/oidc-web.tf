@@ -164,6 +164,7 @@ data "aws_iam_policy_document" "github_web_deploy" {
     sid = "EcrPush"
     actions = [
       "ecr:BatchCheckLayerAvailability",
+      "ecr:BatchGetImage", # buildx HEADs the manifest to check if that digest already exists before pushing
       "ecr:GetDownloadUrlForLayer",
       "ecr:InitiateLayerUpload",
       "ecr:UploadLayerPart",
