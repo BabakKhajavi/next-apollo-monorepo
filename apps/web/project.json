@@ -32,6 +32,20 @@
         "command": "eslint",
         "cwd": "apps/web"
       }
+    },
+    "serve-staging": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "(sleep 2 && open http://localhost:3000) & set -a && . ./.env.staging && set +a && next dev",
+        "cwd": "apps/web"
+      }
+    },
+    "build-staging": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "set -a && . ./.env.staging && set +a && next build",
+        "cwd": "apps/web"
+      }
     }
   }
 }

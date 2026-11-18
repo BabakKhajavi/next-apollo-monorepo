@@ -1,0 +1,9 @@
+**/node_modules
+**/.next
+**/dist
+**/dist-lambda
+**/dist-lambda-pkg
+.git
+.nx
+**/*.tfstate*
+**/.terraform

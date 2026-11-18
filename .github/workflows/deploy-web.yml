@@ -2,10 +2,11 @@ name: Deploy Web
 
 on:
   push:
-    branches: [main]
+    branches: [main, staging]
     paths:
       - "apps/web/**"
       - "packages/**"
+  workflow_dispatch: {}
 
 jobs:
   deploy:
@@ -18,4 +19,19 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+
       - run: pnpm nx build web
+        env:
+          # Repo Variables/Secrets, not the committed apps/web/.env.staging —
+          # lets these change (e.g. a future custom domain) without a code
+          # change. Swap to per-environment (staging vs production) values
+          # once a second environment actually exists.
+          # Next.js needs two separate env var names for the same value:
+          # NEXT_PUBLIC_* gets bundled into browser JS, the bare name stays
+          # server-only (RSC) — one GitHub variable, mapped to both.
+          NEXT_PUBLIC_GRAPHQL_URI: ${{ vars.GRAPHQL_URI }}
+          GRAPHQL_URI: ${{ vars.GRAPHQL_URI }}
+          NEXT_PUBLIC_APPSYNC_EVENTS_HTTP_ENDPOINT: ${{ vars.NEXT_PUBLIC_APPSYNC_EVENTS_HTTP_ENDPOINT }}
+          NEXT_PUBLIC_APPSYNC_EVENTS_API_KEY: ${{ secrets.NEXT_PUBLIC_APPSYNC_EVENTS_API_KEY }}
+          NEXT_PUBLIC_WORKFLOW_UPDATES_CHANNEL_NAMESPACE: ${{ vars.NEXT_PUBLIC_WORKFLOW_UPDATES_CHANNEL_NAMESPACE }}
+          NEXT_PUBLIC_EXECUTION_UPDATES_CHANNEL_NAMESPACE: ${{ vars.NEXT_PUBLIC_EXECUTION_UPDATES_CHANNEL_NAMESPACE }}

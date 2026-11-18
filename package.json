@@ -5,6 +5,8 @@
   "license": "UNLICENSED",
   "scripts": {
     "dev:web": "nx serve web",
+    "dev:web:staging": "nx run web:serve-staging",
+    "build:web:staging": "nx run web:build-staging",
     "dev:api": "nx serve api",
     "preview:web": "nx run web:preview",
     "build": "nx run-many -t build",
