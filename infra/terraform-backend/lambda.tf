@@ -64,12 +64,16 @@ resource "aws_cloudwatch_log_group" "api" {
   retention_in_days = 14
 }
 
-# RSC pages call this Lambda server-side on every render, so cold starts
-# here delay first byte just as much as a cold web server would —
-# Provisioned Concurrency on a stable alias removes that. deploy-backend.yml
-# repoints this alias to the newly published version after each deploy
-# (via `aws lambda update-alias`), so function_version here is only the
-# initial/fallback value.
+# RSC pages call this Lambda server-side on every render. The plan was
+# Provisioned Concurrency on this alias to remove cold starts from that
+# path, but this account's Lambda concurrency quota is 10 (AWS always
+# reserves a floor of 10 unreserved, so there's no headroom to carve any
+# out) — dropped until a quota increase is requested. The alias itself
+# stays: pins traffic to a published version instead of mutable $LATEST,
+# costs nothing without PC behind it. deploy-backend.yml repoints it to
+# the newly published version after each deploy (via `aws lambda
+# update-alias`), so function_version here is only the initial/fallback
+# value.
 resource "aws_lambda_alias" "api_live" {
   name             = "live"
   function_name    = aws_lambda_function.api.function_name
@@ -78,12 +82,6 @@ resource "aws_lambda_alias" "api_live" {
   lifecycle {
     ignore_changes = [function_version]
   }
-}
-
-resource "aws_lambda_provisioned_concurrency_config" "api_live" {
-  function_name                     = aws_lambda_function.api.function_name
-  qualifier                         = aws_lambda_alias.api_live.name
-  provisioned_concurrent_executions = 1
 }
 
 # --- ai-worker: SQS-triggered, no local runner (see COMMANDS.md Phase 3) -

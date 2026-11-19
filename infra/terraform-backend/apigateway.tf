@@ -5,6 +5,16 @@
 resource "aws_apigatewayv2_api" "api" {
   name          = "${var.project_name}-api"
   protocol_type = "HTTP"
+
+  # Client-side mutations (e.g. GenerateWorkflowForm) call this origin
+  # directly from the browser — server-side RSC queries don't need this
+  # (same-process, no browser involved) but client components do.
+  cors_configuration {
+    allow_origins = ["https://${var.web_origin}"]
+    allow_methods = ["GET", "POST", "OPTIONS"]
+    allow_headers = ["content-type", "authorization"]
+    max_age       = 300
+  }
 }
 
 # Points at the `live` alias (Provisioned Concurrency, see lambda.tf), not

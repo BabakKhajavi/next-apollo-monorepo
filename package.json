@@ -26,8 +26,8 @@
     "release": "nx release",
     "tf:bootstrap:plan": "cd infra/terraform-bootstrap && AWS_PROFILE=zaplite-dev terraform init -input=false && AWS_PROFILE=zaplite-dev terraform plan",
     "tf:bootstrap:apply": "cd infra/terraform-bootstrap && AWS_PROFILE=zaplite-dev terraform init -input=false && AWS_PROFILE=zaplite-dev terraform apply",
-    "tf:backend:plan": "pnpm run bundle:lambdas && cd infra/terraform-backend && AWS_PROFILE=zaplite-dev terraform init -input=false && AWS_PROFILE=zaplite-dev terraform plan",
-    "tf:backend:apply": "pnpm run bundle:lambdas && cd infra/terraform-backend && AWS_PROFILE=zaplite-dev terraform init -input=false && AWS_PROFILE=zaplite-dev terraform apply",
+    "tf:backend:plan": "pnpm run bundle:lambdas && cd infra/terraform-backend && AWS_PROFILE=zaplite-dev TF_VAR_web_origin=d1n0jh6fjjx4e3.cloudfront.net terraform init -input=false && AWS_PROFILE=zaplite-dev TF_VAR_web_origin=d1n0jh6fjjx4e3.cloudfront.net terraform plan",
+    "tf:backend:apply": "pnpm run bundle:lambdas && cd infra/terraform-backend && AWS_PROFILE=zaplite-dev TF_VAR_web_origin=d1n0jh6fjjx4e3.cloudfront.net terraform init -input=false && AWS_PROFILE=zaplite-dev TF_VAR_web_origin=d1n0jh6fjjx4e3.cloudfront.net terraform apply",
     "tf:web:plan": "cd infra/terraform-web && AWS_PROFILE=zaplite-dev terraform init -input=false && AWS_PROFILE=zaplite-dev terraform plan",
     "tf:web:apply": "cd infra/terraform-web && AWS_PROFILE=zaplite-dev terraform init -input=false && AWS_PROFILE=zaplite-dev terraform apply"
   },

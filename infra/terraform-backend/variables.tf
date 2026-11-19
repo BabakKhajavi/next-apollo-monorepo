@@ -15,3 +15,8 @@ variable "openai_api_key" {
   type        = string
   sensitive   = true
 }
+
+variable "web_origin" {
+  description = "CloudFront domain the web app is served from (infra/terraform-web's output) — allowed as a CORS origin on the API Gateway HTTP API. Separate Terraform root/state, so this can't be read directly; pass it via TF_VAR_web_origin."
+  type        = string
+}

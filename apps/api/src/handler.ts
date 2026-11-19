@@ -39,6 +39,16 @@ export const handler = async (
   context: Context,
   callback: Callback<APIGatewayProxyStructuredResultV2>,
 ) => {
+  // API Gateway's $default route forwards every method, OPTIONS included,
+  // straight to this Lambda — it only adds the cors_configuration response
+  // headers on top, it doesn't answer preflight itself. A bare preflight
+  // call never carries content-type/x-apollo-operation-name (those would
+  // need their own preflight), so Apollo's CSRF check rejects it with a
+  // 400 unless we short-circuit here first.
+  if (event.requestContext.http.method === 'OPTIONS') {
+    return { statusCode: 200, body: '' };
+  }
+
   const graphqlHandler = await handlerPromise;
   return graphqlHandler(event, context, callback);
 };
