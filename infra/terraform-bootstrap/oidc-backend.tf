@@ -185,7 +185,9 @@ data "aws_iam_policy_document" "github_lambda_deploy" {
   # repoint the `live` alias (Provisioned Concurrency sits on that alias,
   # not on $LATEST — see infra/terraform-backend/lambda.tf).
   statement {
-    actions = ["lambda:PublishVersion", "lambda:UpdateAlias", "lambda:GetAlias"]
+    # GetFunctionConfiguration is what `aws lambda wait function-updated`
+    # polls — distinct from GetFunction, which only covers plain reads.
+    actions = ["lambda:PublishVersion", "lambda:UpdateAlias", "lambda:GetAlias", "lambda:GetFunctionConfiguration"]
     resources = [
       "arn:aws:lambda:us-east-1:${var.account_id}:function:nam-api",
       "arn:aws:lambda:us-east-1:${var.account_id}:function:nam-api:*",
