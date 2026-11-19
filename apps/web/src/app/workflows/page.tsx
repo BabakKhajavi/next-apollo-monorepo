@@ -8,7 +8,9 @@ import { workflowStatusTone } from "@/features/workflows/status-tone";
 export const dynamic = "force-dynamic";
 
 export default async function WorkflowsPage() {
-  const { data } = await query({ query: WorkflowsDocument });
+  // Stress-test value for Web Vitals measurement on a heavy, unvirtualized
+  // list — not the real-world default (20). Revert once that pass is done.
+  const { data } = await query({ query: WorkflowsDocument, variables: { first: 1000 } });
   if (!data) throw new Error("The workflows response was empty");
 
   return (

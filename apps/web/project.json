@@ -14,7 +14,7 @@
     "serve": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "next dev",
+        "command": "next dev -p 4200",
         "cwd": "apps/web"
       }
     },
@@ -36,7 +36,7 @@
     "serve-staging": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "(sleep 2 && open http://localhost:3000) & set -a && . ./.env.staging && set +a && next dev",
+        "command": "(sleep 2 && open http://localhost:4200) & set -a && . ./.env.staging && set +a && next dev -p 4200",
         "cwd": "apps/web"
       }
     },
