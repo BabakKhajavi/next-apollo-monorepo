@@ -3,8 +3,12 @@ import "./globals.css";
 import { AppShell } from "@/components/shell/AppShell";
 
 export const metadata: Metadata = {
-  title: "Workflows",
-  description: "Workflow workspace",
+  title: {
+    default: "FlowPilot",
+    template: "%s | FlowPilot",
+  },
+  applicationName: "FlowPilot",
+  description: "Monitor and manage workflows, executions, and performance in FlowPilot.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

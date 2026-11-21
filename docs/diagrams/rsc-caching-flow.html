@@ -1,0 +1,192 @@
+<!-- layout: single column, top-down flow, two stacked mermaid diagrams -->
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>RSC Caching Flow</title>
+<style>
+  :root {
+    --bg: #faf9f6;
+    --surface: #ffffff;
+    --border: #e4e1da;
+    --fg: #1c1b19;
+    --fg-muted: #6b675f;
+    --accent: #1f6f5c;
+    --accent-soft: #e4f1ed;
+    --warn: #b5541f;
+    --warn-soft: #faeee4;
+    --font-display: "Fraunces", Georgia, serif;
+    --font-body: "Inter", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17201c;
+      --surface: #1f2a25;
+      --border: #334038;
+      --fg: #eceae4;
+      --fg-muted: #a0a89f;
+      --accent: #5fcbaa;
+      --accent-soft: #223c33;
+      --warn: #e2a06f;
+      --warn-soft: #3c2c1f;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #17201c;
+    --surface: #1f2a25;
+    --border: #334038;
+    --fg: #eceae4;
+    --fg-muted: #a0a89f;
+    --accent: #5fcbaa;
+    --accent-soft: #223c33;
+    --warn: #e2a06f;
+    --warn-soft: #3c2c1f;
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-body);
+    line-height: 1.5;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 32px;
+  }
+  main {
+    max-width: 760px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+  h1 {
+    font-family: var(--font-display);
+    font-size: clamp(1.6rem, 4vw, 2.1rem);
+    font-weight: 600;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .lede {
+    color: var(--fg-muted);
+    font-size: 0.98rem;
+    max-width: 62ch;
+  }
+  section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  h2 {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 0;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    overflow-x: auto;
+  }
+  .takeaway {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    background: var(--accent-soft);
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 0.92rem;
+  }
+  .takeaway.warn {
+    background: var(--warn-soft);
+    border-color: var(--warn);
+  }
+  .takeaway b {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--fg-muted);
+    white-space: nowrap;
+  }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.88em;
+    background: var(--accent-soft);
+    padding: 0.1em 0.4em;
+    border-radius: 4px;
+  }
+  .pre {
+    margin: 0;
+  }
+</style>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600&family=Inter:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<main>
+  <div>
+    <h1>How caching actually works across one RSC request</h1>
+    <p class="lede">Two separate caching layers are involved, with two very different lifetimes. Mixing them up is the usual source of confusion.</p>
+  </div>
+
+  <section>
+    <h2>1. Apollo's cache — lives for one request, then is thrown away</h2>
+    <div class="card">
+<pre class="mermaid">
+sequenceDiagram
+    participant U1 as Request #1
+    participant A1 as ApolloClient<br/>(fresh cache)
+    participant SC1 as ServerComponent A
+    participant SC2 as ServerComponent B
+    participant API as GraphQL API
+
+    U1->>A1: registerApolloClient() factory runs
+    SC1->>A1: query(GetContinents)
+    A1->>API: fetch (cache miss)
+    API-->>A1: data
+    A1-->>SC1: data
+    SC2->>A1: query(GetContinents) — same request
+    A1-->>SC2: data (from this request's cache, no 2nd fetch)
+    Note over A1: request finishes → client + cache discarded
+
+    participant U2 as Request #2 (new user, or same user again)
+    participant A2 as ApolloClient<br/>(fresh cache)
+    U2->>A2: registerApolloClient() factory runs again
+    Note over A2: no memory of Request #1 at all
+</pre>
+    </div>
+    <div class="takeaway">
+      <b>What this buys you</b>
+      <span>Two server components asking for the same data in the <em>same</em> page render share one network call. That's the entire job of this cache — deduplication within a request, not storage across requests.</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>2. The actual cross-request cache sits one layer lower</h2>
+    <div class="card">
+<pre class="mermaid">
+graph TD
+    SC["Server Component<br/>calls query()"] --> AC["Apollo Client<br/>(per-request cache)"]
+    AC --> HL["HttpLink<br/>→ calls fetch()"]
+    HL --> FC{{"Next.js fetch cache<br/>keyed by URL + options<br/>survives across requests"}}
+    FC -->|cache hit, within revalidate window| AC
+    FC -->|cache miss / expired| API[("GraphQL API")]
+    API --> FC
+</pre>
+    </div>
+    <div class="takeaway warn">
+      <b>Why not share Apollo's cache instead</b>
+      <span>It has no concept of "which user." A persistent in-memory Apollo cache on the server would leak one user's response into another user's request. Next's fetch cache is safe to share because it's keyed purely by URL/args, never by who asked.</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>Where this repo's code sits today</h2>
+    <div class="card">
+      <p style="margin:0 0 10px"><code>createHttpLink(uri)</code> in <code>packages/apollo-client/src/links/http-link.ts</code> doesn't set <code>fetchOptions.next.revalidate</code> yet — so that bottom layer in diagram 2 is currently disabled. Every RSC query is a live network call, every time.</p>
+      <p style="margin:0">Passing <code>{ fetchOptions: { next: { revalidate: 60 } } }</code> on the <code>HttpLink</code> turns it back on.</p>
+    </div>
+  </section>
+</main>

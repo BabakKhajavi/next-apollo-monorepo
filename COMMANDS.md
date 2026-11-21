@@ -595,3 +595,12 @@ aws iam put-user-policy --user-name zaplite-main-developer --profile zaplite-dev
 cd infra/terraform-web && AWS_PROFILE=zaplite-dev terraform apply   # 28 resources, real AWS infra now live
 # GitHub repo variable added: STAGE_CLOUDFRONT_DIST = <CloudFront distribution id>
 ```
+
+### Created `docs/diagrams/` — moved standalone HTML architecture diagrams out of gitignored scratch dir so they're committed and reusable
+
+User had been generating one-off HTML diagrams (deploy pipeline, request flow, RSC caching flow) into `.claude-scratch/` (gitignored, local-only) and wanted them persisted in the repo for future reference, since more are planned. Moved the existing 3 files into a new tracked `docs/diagrams/` folder at repo root.
+
+```
+mkdir -p docs/diagrams
+cp .claude-scratch/*.html docs/diagrams/   # web-pipeline.html, request-flow.html, rsc-caching-flow.html
+```
