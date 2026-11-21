@@ -43,15 +43,25 @@ export class AppSyncEventsClient {
   private reconnectAttempt = 0;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private closedByCaller = false;
+  private acknowledged = false;
 
   constructor(private readonly config: AppSyncEventsClientConfig) {}
 
   async subscribe(channel: string, onEvent: EventHandler): Promise<() => void> {
     const id = crypto.randomUUID();
+    const wasConnected = this.acknowledged;
+    const activeConnection = this.connectPromise;
     this.subscriptions.set(id, { channel, onEvent });
-
-    await this.ensureConnected();
-    this.sendSubscribe(id, channel);
+    try {
+      await this.ensureConnected();
+      // Initial connection/reconnect subscribes all rows on ack. A new row
+      // added after ack needs its own subscribe frame.
+      if (wasConnected && activeConnection === this.connectPromise)
+        this.sendSubscribe(id, channel);
+    } catch (error) {
+      this.subscriptions.delete(id);
+      throw error;
+    }
 
     return () => {
       this.subscriptions.delete(id);
@@ -63,6 +73,8 @@ export class AppSyncEventsClient {
   close(): void {
     this.closedByCaller = true;
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
+    this.reconnectTimer = null;
+    this.acknowledged = false;
     this.socket?.close();
     this.socket = null;
     this.connectPromise = null;
@@ -82,20 +94,31 @@ export class AppSyncEventsClient {
 
   private authHeader(): Record<string, string> {
     const amzDate = new Date().toISOString().replace(/[:-]|\.\d{3}/g, "");
-    return { host: this.httpHost, "x-amz-date": amzDate, "x-api-key": this.config.apiKey };
+    return {
+      host: this.httpHost,
+      "x-amz-date": amzDate,
+      "x-api-key": this.config.apiKey,
+    };
   }
 
   private base64url(value: string): string {
-    return btoa(value).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    return btoa(value)
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "");
   }
 
   private ensureConnected(): Promise<void> {
     this.closedByCaller = false;
     if (this.connectPromise) return this.connectPromise;
+    this.acknowledged = false;
 
     this.connectPromise = new Promise((resolve, reject) => {
       const encodedHeader = this.base64url(JSON.stringify(this.authHeader()));
-      const socket = new WebSocket(this.realtimeUrl, ["aws-appsync-event-ws", `header-${encodedHeader}`]);
+      const socket = new WebSocket(this.realtimeUrl, [
+        "aws-appsync-event-ws",
+        `header-${encodedHeader}`,
+      ]);
       this.socket = socket;
 
       socket.addEventListener("open", () => {
@@ -111,9 +134,11 @@ export class AppSyncEventsClient {
 
         if (data.type === "connection_ack") {
           this.reconnectAttempt = 0;
+          this.acknowledged = true;
           resolve();
           // Re-establish any subscriptions that existed before a reconnect.
-          for (const [id, { channel }] of this.subscriptions) this.sendSubscribe(id, channel);
+          for (const [id, { channel }] of this.subscriptions)
+            this.sendSubscribe(id, channel);
           return;
         }
 
@@ -126,6 +151,7 @@ export class AppSyncEventsClient {
       socket.addEventListener("close", () => {
         this.socket = null;
         this.connectPromise = null;
+        this.acknowledged = false;
         if (this.closedByCaller || this.subscriptions.size === 0) return;
         this.scheduleReconnect();
       });
@@ -139,16 +165,26 @@ export class AppSyncEventsClient {
   }
 
   private scheduleReconnect(): void {
-    const delay = Math.min(1000 * 2 ** this.reconnectAttempt, MAX_RECONNECT_DELAY_MS);
+    if (this.reconnectTimer) return;
+    const delay = Math.min(
+      1000 * 2 ** this.reconnectAttempt,
+      MAX_RECONNECT_DELAY_MS,
+    );
     this.reconnectAttempt += 1;
     this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
       this.ensureConnected().catch(() => this.scheduleReconnect());
     }, delay);
   }
 
   private sendSubscribe(id: string, channel: string): void {
     this.socket?.send(
-      JSON.stringify({ id, channel, authorization: this.authHeader(), type: "subscribe" }),
+      JSON.stringify({
+        id,
+        channel,
+        authorization: this.authHeader(),
+        type: "subscribe",
+      }),
     );
   }
 }

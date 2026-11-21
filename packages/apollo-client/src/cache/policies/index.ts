@@ -8,11 +8,13 @@ import type { FieldPolicy, TypePolicies } from "@apollo/client";
  * `workflowId`-scoped list (`executions`) still needs its own cache entry
  * per workflow, so that field policy keys on `["workflowId"]` instead.
  */
-function cursorPagination(keyArgs: FieldPolicy["keyArgs"] = false): FieldPolicy {
+function cursorPagination(
+  keyArgs: FieldPolicy["keyArgs"] = false,
+): FieldPolicy {
   return {
     keyArgs,
-    merge(existing, incoming) {
-      if (!existing) return incoming;
+    merge(existing, incoming, { args }) {
+      if (!existing || !args?.after) return incoming;
       return {
         ...incoming,
         items: [...existing.items, ...incoming.items],
@@ -24,7 +26,7 @@ function cursorPagination(keyArgs: FieldPolicy["keyArgs"] = false): FieldPolicy 
 export const typePolicies: TypePolicies = {
   Query: {
     fields: {
-      workflows: cursorPagination(),
+      workflows: cursorPagination(["q"]),
       executions: cursorPagination(["workflowId"]),
     },
   },

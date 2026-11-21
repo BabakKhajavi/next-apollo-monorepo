@@ -4,6 +4,7 @@ import { useApolloClient } from "@apollo/client/react";
 import { useAppSyncEventsSubscription } from "@monorepo/apollo-client/realtime";
 import {
   appSyncEventsClient,
+  appSyncEventsEnabled,
   executionChannel,
   workflowChannel,
   type ExecutionUpdateEvent,
@@ -21,13 +22,18 @@ export function useWorkflowLiveUpdates(workflowId: string): void {
 
   useAppSyncEventsSubscription<WorkflowUpdateEvent>(
     appSyncEventsClient,
-    workflowChannel(workflowId),
+    appSyncEventsEnabled ? workflowChannel(workflowId) : null,
     (event) => {
       client.cache.modify({
-        id: client.cache.identify({ __typename: "Workflow", id: event.workflowId }),
+        id: client.cache.identify({
+          __typename: "Workflow",
+          id: event.workflowId,
+        }),
         fields: {
           status: () => event.status,
-          ...(event.definition !== undefined && { definition: () => event.definition }),
+          ...(event.definition !== undefined && {
+            definition: () => event.definition,
+          }),
         },
       });
     },
@@ -39,10 +45,13 @@ export function useExecutionLiveUpdates(executionId: string): void {
 
   useAppSyncEventsSubscription<ExecutionUpdateEvent>(
     appSyncEventsClient,
-    executionChannel(executionId),
+    appSyncEventsEnabled ? executionChannel(executionId) : null,
     (event) => {
       client.cache.modify({
-        id: client.cache.identify({ __typename: "Execution", id: event.executionId }),
+        id: client.cache.identify({
+          __typename: "Execution",
+          id: event.executionId,
+        }),
         fields: {
           status: () => event.status,
           ...(event.error !== undefined && { error: () => event.error }),

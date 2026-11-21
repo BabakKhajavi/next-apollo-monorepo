@@ -8,14 +8,21 @@ export const appSyncEventsClient = new AppSyncEventsClient({
   apiKey: process.env.NEXT_PUBLIC_APPSYNC_EVENTS_API_KEY ?? "",
 });
 
+export const appSyncEventsEnabled = Boolean(
+  process.env.NEXT_PUBLIC_APPSYNC_EVENTS_HTTP_ENDPOINT &&
+  process.env.NEXT_PUBLIC_APPSYNC_EVENTS_API_KEY,
+);
+
 // Channel namespace names must match the deployed
 // aws_appsync_channel_namespace Terraform resources exactly (prefixed
 // with var.project_name there) — not hardcoded here, so a renamed
 // deployment doesn't silently stop receiving events.
 const WORKFLOW_UPDATES_CHANNEL_NAMESPACE =
-  process.env.NEXT_PUBLIC_WORKFLOW_UPDATES_CHANNEL_NAMESPACE ?? "workflow-updates";
+  process.env.NEXT_PUBLIC_WORKFLOW_UPDATES_CHANNEL_NAMESPACE ??
+  "workflow-updates";
 const EXECUTION_UPDATES_CHANNEL_NAMESPACE =
-  process.env.NEXT_PUBLIC_EXECUTION_UPDATES_CHANNEL_NAMESPACE ?? "execution-updates";
+  process.env.NEXT_PUBLIC_EXECUTION_UPDATES_CHANNEL_NAMESPACE ??
+  "execution-updates";
 
 export function workflowChannel(workflowId: string): string {
   return `/${WORKFLOW_UPDATES_CHANNEL_NAMESPACE}/${workflowId}`;

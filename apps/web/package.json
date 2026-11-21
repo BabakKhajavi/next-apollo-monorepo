@@ -16,9 +16,11 @@
     "@monorepo/design-system": "workspace:*",
     "@monorepo/graphql-contracts": "workspace:*",
     "graphql": "^16.9.0",
+    "lucide-react": "^1.77.0",
     "next": "16.4.5",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "recharts": "^3.11.0",
     "rxjs": "^7.8.0"
   },
   "devDependencies": {
