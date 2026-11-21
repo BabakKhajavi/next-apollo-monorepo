@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Workflow and Execution Flow</title>
+<style>
+:root{--bg:#f7f6f3;--surface:#fff;--ink:#1b1d1f;--muted:#6b7074;--line:#d8d5cf;--accent:#2f6f4f;--accent-soft:#e3efe8;--warn:#b5752c;--warn-soft:#f4e8d8;--font-display:'Space Grotesk',ui-sans-serif,sans-serif;--font-body:'Inter',ui-sans-serif,sans-serif;--font-mono:'JetBrains Mono',ui-monospace,monospace}
+@media (prefers-color-scheme:dark){:root{--bg:#15171a;--surface:#1d2023;--ink:#eceae6;--muted:#9a9fa3;--line:#32363a;--accent:#5fb98a;--accent-soft:#1e2e26;--warn:#e0a25a;--warn-soft:#352a1b;color-scheme:dark}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:980px;margin:auto;padding-block:40px 64px}h1{font:600 clamp(22px,3vw,30px) var(--font-display);margin:0 0 6px}.sub{color:var(--muted);font-size:14px;margin:0 0 32px}h2{font:600 17px var(--font-display);margin:0 0 4px}.section-note{color:var(--muted);font-size:13px;margin:0 0 15px}
+figure{margin:0 0 36px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:22px 16px 18px;overflow-x:auto}.canvas{min-width:820px}svg{width:100%;height:auto;display:block}text{font:11px var(--font-mono);fill:currentColor}.title{font:600 13px var(--font-display)}.lbl{font:11.5px var(--font-body);fill:var(--muted)}.edge{stroke:currentColor;fill:none;stroke-width:1.2}.muted-edge{stroke:var(--muted);fill:none;stroke-width:1.1;stroke-dasharray:4 4}.box{stroke:var(--muted);fill:none;opacity:.65}.accent{stroke:var(--accent);fill:var(--accent-soft)}.warn{stroke:var(--warn);fill:var(--warn-soft)}figcaption{font-size:13px;color:var(--muted);margin-top:10px;padding-inline:8px}code{font:12.5px var(--font-mono);background:var(--accent-soft);color:var(--accent);padding:1px 5px;border-radius:4px}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap">
+</head>
+<body>
+<div class="wrap">
+  <h1>Workflow and Execution Flow</h1>
+  <p class="sub">GraphQL starts each job; SQS workers persist results; AppSync Events pushes status into Apollo's cache.</p>
+  <h2>1. Generate a workflow with AI</h2>
+  <p class="section-note"><code>generateWorkflow(prompt)</code> returns a workflow ID and <code>GENERATING</code> status immediately.</p>
+  <figure>
+    <div class="canvas"><svg viewBox="0 0 940 265" role="img" aria-label="Generate workflow: frontend GraphQL mutation to API, SQS to AI worker, OpenAI generation and DynamoDB write, AppSync event to the frontend Apollo cache">
+      <defs><marker id="arrow-generation" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10Z" fill="currentColor"/></marker></defs>
+      <rect class="box" x="10" y="38" width="140" height="62" rx="8"/><text class="title" x="80" y="63" text-anchor="middle">Frontend</text><text class="lbl" x="80" y="81" text-anchor="middle">GraphQL mutation</text>
+      <rect class="box" x="202" y="38" width="140" height="62" rx="8"/><text class="title" x="272" y="63" text-anchor="middle">GraphQL API</text><text class="lbl" x="272" y="81" text-anchor="middle">create GENERATING</text>
+      <rect class="box" x="394" y="38" width="140" height="62" rx="8"/><text class="title" x="464" y="63" text-anchor="middle">SQS</text><text class="lbl" x="464" y="81" text-anchor="middle">generation queue</text>
+      <rect class="warn" x="586" y="38" width="150" height="62" rx="8"/><text class="title" x="661" y="63" text-anchor="middle">AI worker</text><text class="lbl" x="661" y="81" text-anchor="middle">OpenAI → definition</text>
+      <rect class="box" x="788" y="38" width="142" height="62" rx="8"/><text class="title" x="859" y="63" text-anchor="middle">DynamoDB</text><text class="lbl" x="859" y="81" text-anchor="middle">store DRAFT / failed</text>
+      <path class="edge" d="M150 69H198" marker-end="url(#arrow-generation)"/><path class="edge" d="M342 69H390" marker-end="url(#arrow-generation)"/><path class="edge" d="M534 69H582" marker-end="url(#arrow-generation)"/><path class="edge" d="M736 69H784" marker-end="url(#arrow-generation)"/>
+      <rect class="accent" x="586" y="156" width="150" height="62" rx="8"/><text class="title" x="661" y="181" text-anchor="middle">AppSync Events</text><text class="lbl" x="661" y="199" text-anchor="middle">workflow ID channel</text>
+      <rect class="accent" x="10" y="156" width="170" height="62" rx="8"/><text class="title" x="95" y="181" text-anchor="middle">Apollo cache</text><text class="lbl" x="95" y="199" text-anchor="middle">patch status + definition</text>
+      <path class="edge" d="M859 100V132H661V152" marker-end="url(#arrow-generation)"/><text class="lbl" x="812" y="126" text-anchor="middle">publish after write</text>
+      <path class="edge" d="M586 187H184" marker-end="url(#arrow-generation)"/><text class="lbl" x="383" y="178" text-anchor="middle">subscription event</text>
+      <path class="muted-edge" d="M95 156V104" marker-end="url(#arrow-generation)"/><text class="lbl" x="195" y="241">No GraphQL refetch for the status event. Approve is a separate mutation.</text>
+    </svg></div>
+    <figcaption>The AI worker writes the generated definition to DynamoDB before publishing an AppSync event. The subscribed detail page updates from Apollo's normalized cache.</figcaption>
+  </figure>
+  <h2>2. Execute an approved workflow</h2>
+  <p class="section-note"><code>executeWorkflow(workflowId)</code> requires an <code>ACTIVE</code> workflow and returns a <code>PENDING</code> execution.</p>
+  <figure>
+    <div class="canvas"><svg viewBox="0 0 940 265" role="img" aria-label="Execute workflow: frontend GraphQL mutation to API, SQS to execution worker, DynamoDB status writes, AppSync event to frontend Apollo cache, with one GraphQL refetch to add the new execution row">
+      <defs><marker id="arrow-execution" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10Z" fill="currentColor"/></marker></defs>
+      <rect class="box" x="10" y="38" width="140" height="62" rx="8"/><text class="title" x="80" y="63" text-anchor="middle">Frontend</text><text class="lbl" x="80" y="81" text-anchor="middle">GraphQL mutation</text>
+      <rect class="box" x="202" y="38" width="140" height="62" rx="8"/><text class="title" x="272" y="63" text-anchor="middle">GraphQL API</text><text class="lbl" x="272" y="81" text-anchor="middle">create PENDING</text>
+      <rect class="box" x="394" y="38" width="140" height="62" rx="8"/><text class="title" x="464" y="63" text-anchor="middle">SQS</text><text class="lbl" x="464" y="81" text-anchor="middle">execution queue</text>
+      <rect class="warn" x="586" y="38" width="150" height="62" rx="8"/><text class="title" x="661" y="63" text-anchor="middle">Execution worker</text><text class="lbl" x="661" y="81" text-anchor="middle">run actions</text>
+      <rect class="box" x="788" y="38" width="142" height="62" rx="8"/><text class="title" x="859" y="63" text-anchor="middle">DynamoDB</text><text class="lbl" x="859" y="81" text-anchor="middle">store each status</text>
+      <path class="edge" d="M150 69H198" marker-end="url(#arrow-execution)"/><path class="edge" d="M342 69H390" marker-end="url(#arrow-execution)"/><path class="edge" d="M534 69H582" marker-end="url(#arrow-execution)"/><path class="edge" d="M736 69H784" marker-end="url(#arrow-execution)"/>
+      <rect class="accent" x="586" y="156" width="150" height="62" rx="8"/><text class="title" x="661" y="181" text-anchor="middle">AppSync Events</text><text class="lbl" x="661" y="199" text-anchor="middle">execution ID channel</text>
+      <rect class="accent" x="10" y="156" width="170" height="62" rx="8"/><text class="title" x="95" y="181" text-anchor="middle">Apollo cache</text><text class="lbl" x="95" y="199" text-anchor="middle">patch visible row</text>
+      <path class="edge" d="M859 100V132H661V152" marker-end="url(#arrow-execution)"/><text class="lbl" x="812" y="126" text-anchor="middle">publish after write</text>
+      <path class="edge" d="M586 187H184" marker-end="url(#arrow-execution)"/><text class="lbl" x="383" y="178" text-anchor="middle">RUNNING → SUCCEEDED / FAILED</text>
+      <path class="muted-edge" d="M95 156V104" marker-end="url(#arrow-execution)"/><text class="lbl" x="176" y="241">One GraphQL refetch adds the new row; later status events only patch the cache.</text>
+    </svg></div>
+    <figcaption>New execution rows appear after one GraphQL refetch on the workflow detail page. Visible status changes use AppSync events; dashboard lists discover new rows on navigation or refresh.</figcaption>
+  </figure>
+</div>
+</body>
+</html>
