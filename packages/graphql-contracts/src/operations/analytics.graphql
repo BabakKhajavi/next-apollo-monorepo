@@ -1,0 +1,13 @@
+query DashboardAnalytics($days: Int!) {
+  dashboardAnalytics(days: $days) {
+    trend { date total succeeded failed }
+    topWorkflows { workflowId name executions }
+  }
+}
+
+query RecentExecutions($first: Int!, $days: Int!, $after: String, $status: ExecutionStatus, $workflowId: String) {
+  recentExecutions(first: $first, days: $days, after: $after, status: $status, workflowId: $workflowId) {
+    items { id workflowId workflowName status createdAt updatedAt error }
+    nextCursor
+  }
+}

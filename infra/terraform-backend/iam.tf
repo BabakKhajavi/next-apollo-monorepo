@@ -30,6 +30,7 @@ data "aws_iam_policy_document" "api_lambda_inline" {
     sid = "DynamoDbReadWrite"
     actions = [
       "dynamodb:GetItem",
+      "dynamodb:BatchGetItem",
       "dynamodb:PutItem",
       "dynamodb:UpdateItem",
       "dynamodb:Query",

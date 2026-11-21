@@ -3,8 +3,10 @@
 // Real deployments provision these tables via Terraform (Phase 6).
 import {
   CreateTableCommand,
+  DescribeTableCommand,
   DynamoDBClient,
   ResourceInUseException,
+  UpdateTableCommand,
 } from '@aws-sdk/client-dynamodb';
 
 const endpoint = process.env.DYNAMODB_ENDPOINT ?? 'http://localhost:8000';
@@ -43,6 +45,7 @@ await createTable({
     { AttributeName: 'workflowId', AttributeType: 'S' },
     { AttributeName: 'status', AttributeType: 'S' },
     { AttributeName: 'createdAt', AttributeType: 'S' },
+    { AttributeName: 'activityType', AttributeType: 'S' },
   ],
   KeySchema: [{ AttributeName: 'id', KeyType: 'HASH' }],
   GlobalSecondaryIndexes: [
@@ -62,5 +65,29 @@ await createTable({
       ],
       Projection: { ProjectionType: 'ALL' },
     },
+    {
+      IndexName: 'byRecent',
+      KeySchema: [
+        { AttributeName: 'activityType', KeyType: 'HASH' },
+        { AttributeName: 'createdAt', KeyType: 'RANGE' },
+      ],
+      Projection: { ProjectionType: 'ALL' },
+    },
   ],
 });
+
+// Existing DynamoDB Local tables may predate the recent-executions index.
+const executionsTable = process.env.EXECUTIONS_TABLE_NAME ?? 'Executions';
+const description = await client.send(new DescribeTableCommand({ TableName: executionsTable }));
+if (!description.Table?.GlobalSecondaryIndexes?.some((index) => index.IndexName === 'byRecent')) {
+  await client.send(new UpdateTableCommand({
+    TableName: executionsTable,
+    AttributeDefinitions: [{ AttributeName: 'activityType', AttributeType: 'S' }],
+    GlobalSecondaryIndexUpdates: [{ Create: {
+      IndexName: 'byRecent',
+      KeySchema: [{ AttributeName: 'activityType', KeyType: 'HASH' }, { AttributeName: 'createdAt', KeyType: 'RANGE' }],
+      Projection: { ProjectionType: 'ALL' },
+    } }],
+  }));
+  console.log('Added byRecent index to existing Executions table.');
+}

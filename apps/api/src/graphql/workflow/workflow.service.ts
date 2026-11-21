@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { ulid } from 'ulid';
 import { decodeCursor, encodeCursor } from '../../common/cursor.util.js';
 import { WORKFLOW_GENERATION_QUEUE_URL } from '../../sqs/queue-names.js';
@@ -64,8 +68,20 @@ export class WorkflowService {
     return workflow;
   }
 
-  async list(first: number, after?: string): Promise<WorkflowConnection> {
-    const page = await this.repository.list(first, decodeCursor(after));
+  async list(
+    first: number,
+    after?: string,
+    q?: string,
+  ): Promise<WorkflowConnection> {
+    if (!Number.isInteger(first) || first < 1 || first > 50)
+      throw new BadRequestException('first must be between 1 and 50');
+    if (q && q.length > 80)
+      throw new BadRequestException('q must be at most 80 characters');
+    const page = await this.repository.list(
+      first,
+      decodeCursor(after),
+      q?.trim(),
+    );
     return {
       items: page.items,
       nextCursor: encodeCursor(page.lastEvaluatedKey),

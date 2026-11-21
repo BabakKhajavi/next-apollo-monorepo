@@ -23,8 +23,9 @@ export class WorkflowResolver {
   workflows(
     @Args('first', { type: () => Int, defaultValue: 20 }) first: number,
     @Args('after', { type: () => String, nullable: true }) after?: string,
+    @Args('q', { type: () => String, nullable: true }) q?: string,
   ) {
-    return this.workflowService.list(first, after);
+    return this.workflowService.list(first, after, q);
   }
 
   @Mutation(() => Workflow)
@@ -36,7 +37,8 @@ export class WorkflowResolver {
 
   @Mutation(() => Workflow)
   createWorkflow(
-    @Args('input', { type: () => CreateWorkflowInput }) input: CreateWorkflowInput,
+    @Args('input', { type: () => CreateWorkflowInput })
+    input: CreateWorkflowInput,
   ): Promise<Workflow> {
     return this.workflowService.create(input);
   }

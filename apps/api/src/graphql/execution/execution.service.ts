@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { ulid } from 'ulid';
 import { decodeCursor, encodeCursor } from '../../common/cursor.util.js';
 import { WORKFLOW_EXECUTION_QUEUE_URL } from '../../sqs/queue-names.js';
@@ -38,6 +42,7 @@ export class ExecutionService {
     const execution: Execution = {
       id: ulid(),
       workflowId,
+      activityType: 'EXECUTION',
       status: ExecutionStatus.PENDING,
       createdAt: now,
       updatedAt: now,

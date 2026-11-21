@@ -38,6 +38,11 @@ resource "aws_dynamodb_table" "executions" {
     type = "S"
   }
 
+  attribute {
+    name = "activityType"
+    type = "S"
+  }
+
   global_secondary_index {
     name            = "byWorkflowId"
     hash_key        = "workflowId"
@@ -48,6 +53,13 @@ resource "aws_dynamodb_table" "executions" {
   global_secondary_index {
     name            = "byStatus"
     hash_key        = "status"
+    range_key       = "createdAt"
+    projection_type = "ALL"
+  }
+
+  global_secondary_index {
+    name            = "byRecent"
+    hash_key        = "activityType"
     range_key       = "createdAt"
     projection_type = "ALL"
   }

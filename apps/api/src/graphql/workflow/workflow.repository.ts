@@ -1,4 +1,6 @@
 import {
+  BatchGetCommand,
+  type BatchGetCommandInput,
   DeleteCommand,
   DynamoDBDocumentClient,
   GetCommand,
@@ -54,18 +56,42 @@ export class WorkflowRepository {
     return result.Item ? fromItem(result.Item) : undefined;
   }
 
+  async getNames(ids: string[]): Promise<Map<string, string>> {
+    const names = new Map<string, string>();
+    if (ids.length === 0) return names;
+    let requestItems: NonNullable<BatchGetCommandInput['RequestItems']> = {
+      [WORKFLOWS_TABLE]: { Keys: [...new Set(ids)].map((id) => ({ id })), ProjectionExpression: 'id, #name', ExpressionAttributeNames: { '#name': 'name' } },
+    };
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const result = await this.client.send(new BatchGetCommand({ RequestItems: requestItems }));
+      for (const item of result.Responses?.[WORKFLOWS_TABLE] ?? []) names.set(item.id as string, item.name as string);
+      const unprocessed = result.UnprocessedKeys?.[WORKFLOWS_TABLE];
+      if (!unprocessed?.Keys?.length) return names;
+      requestItems = { [WORKFLOWS_TABLE]: unprocessed };
+    }
+    return names;
+  }
+
   // No GSI for "list all workflows": at single-tenant demo scale a Scan
   // with a page Limit is the pragmatic choice. Once auth/multi-tenancy
   // lands, add a GSI keyed on ownerId and query that instead.
   async list(
     limit: number,
     exclusiveStartKey?: Record<string, unknown>,
+    q?: string,
   ): Promise<WorkflowPage> {
     const result = await this.client.send(
       new ScanCommand({
         TableName: WORKFLOWS_TABLE,
         Limit: limit,
         ExclusiveStartKey: exclusiveStartKey,
+        ...(q
+          ? {
+              FilterExpression: 'contains(#name, :q)',
+              ExpressionAttributeNames: { '#name': 'name' },
+              ExpressionAttributeValues: { ':q': q },
+            }
+          : {}),
       }),
     );
     return {
@@ -112,9 +138,19 @@ export class WorkflowRepository {
   }
 
   async count(): Promise<number> {
-    const result = await this.client.send(
-      new ScanCommand({ TableName: WORKFLOWS_TABLE, Select: 'COUNT' }),
-    );
-    return result.Count ?? 0;
+    let total = 0;
+    let key: Record<string, unknown> | undefined;
+    do {
+      const result = await this.client.send(
+        new ScanCommand({
+          TableName: WORKFLOWS_TABLE,
+          Select: 'COUNT',
+          ExclusiveStartKey: key,
+        }),
+      );
+      total += result.Count ?? 0;
+      key = result.LastEvaluatedKey;
+    } while (key);
+    return total;
   }
 }

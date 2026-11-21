@@ -1,5 +1,5 @@
-query Workflows($first: Int, $after: String) {
-  workflows(first: $first, after: $after) {
+query Workflows($first: Int, $after: String, $q: String) {
+  workflows(first: $first, after: $after, q: $q) {
     items {
       id
       name

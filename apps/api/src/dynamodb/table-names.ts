@@ -4,3 +4,4 @@ export const EXECUTIONS_TABLE =
 
 export const EXECUTIONS_BY_WORKFLOW_INDEX = 'byWorkflowId';
 export const EXECUTIONS_BY_STATUS_INDEX = 'byStatus';
+export const EXECUTIONS_BY_RECENT_INDEX = 'byRecent';

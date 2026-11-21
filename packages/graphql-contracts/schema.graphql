@@ -7,6 +7,11 @@ input CreateWorkflowInput {
   name: String!
 }
 
+type DashboardAnalytics {
+  topWorkflows: [WorkflowPerformanceRow!]!
+  trend: [ExecutionTrendPoint!]!
+}
+
 type DashboardStats {
   executionsByStatus: [ExecutionStatusCount!]!
   totalExecutions: Int!
@@ -25,6 +30,7 @@ type Execution {
   status: ExecutionStatus!
   updatedAt: DateTime!
   workflowId: ID!
+  workflowName: String
 }
 
 type ExecutionPage {
@@ -44,6 +50,13 @@ type ExecutionStatusCount {
   status: ExecutionStatus!
 }
 
+type ExecutionTrendPoint {
+  date: String!
+  failed: Int!
+  succeeded: Int!
+  total: Int!
+}
+
 """
 The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
 """
@@ -58,12 +71,14 @@ type Mutation {
 }
 
 type Query {
+  dashboardAnalytics(days: Int! = 30): DashboardAnalytics!
   dashboardStats: DashboardStats!
   execution(id: ID!): Execution!
   executions(after: String, first: Int! = 20, workflowId: ID!): ExecutionPage!
   health: String!
+  recentExecutions(after: String, days: Int! = 30, first: Int! = 20, status: ExecutionStatus, workflowId: String): ExecutionPage!
   workflow(id: ID!): Workflow!
-  workflows(after: String, first: Int! = 20): WorkflowPage!
+  workflows(after: String, first: Int! = 20, q: String): WorkflowPage!
 }
 
 type Workflow {
@@ -78,6 +93,12 @@ type Workflow {
 type WorkflowPage {
   items: [Workflow!]!
   nextCursor: String
+}
+
+type WorkflowPerformanceRow {
+  executions: Int!
+  name: String!
+  workflowId: String!
 }
 
 enum WorkflowStatus {

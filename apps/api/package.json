@@ -25,7 +25,8 @@
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
     "db:up": "docker compose -f ../../docker-compose.yml up -d",
     "db:create-tables": "node scripts/create-tables.mjs",
-    "db:seed": "node scripts/seed.mjs"
+    "db:seed": "node scripts/seed.mjs",
+    "db:seed-perf": "node scripts/seed-perf.mjs"
   },
   "dependencies": {
     "@monorepo/ai-helper": "workspace:*",

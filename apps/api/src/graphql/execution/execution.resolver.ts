@@ -4,7 +4,7 @@ import { Execution } from './execution.model.js';
 import { ExecutionService } from './execution.service.js';
 
 // See workflow.resolver.ts: must call Paginated() eagerly at module scope.
-const ExecutionPage = Paginated(Execution);
+export const ExecutionPage = Paginated(Execution);
 
 @Resolver(() => Execution)
 export class ExecutionResolver {

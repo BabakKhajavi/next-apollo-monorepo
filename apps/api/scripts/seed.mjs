@@ -54,6 +54,7 @@ const executions = [
   {
     id: ulid(),
     workflowId: workflows[0].id,
+    activityType: 'EXECUTION',
     status: 'SUCCEEDED',
     createdAt: isoMinutesAgo(85),
     updatedAt: isoMinutesAgo(84),
@@ -61,6 +62,7 @@ const executions = [
   {
     id: ulid(),
     workflowId: workflows[0].id,
+    activityType: 'EXECUTION',
     status: 'FAILED',
     error: 'Upstream AI provider timeout',
     createdAt: isoMinutesAgo(40),
@@ -69,6 +71,7 @@ const executions = [
   {
     id: ulid(),
     workflowId: workflows[1].id,
+    activityType: 'EXECUTION',
     status: 'RUNNING',
     createdAt: isoMinutesAgo(2),
     updatedAt: isoMinutesAgo(2),
