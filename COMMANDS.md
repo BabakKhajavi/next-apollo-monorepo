@@ -636,3 +636,12 @@ pnpm nx build web
 ```
 
 Updated imports after the moves. `data/` holds server queries, `hooks/` holds live-update hooks, and `utils/` holds status mapping and AppSync channel helpers.
+
+### Fix web image build after removing starter assets
+
+```sh
+docker info --format '{{.ServerVersion}}'
+docker build -f apps/web/Dockerfile -t nam-web:public-copy-fix .
+```
+
+The previous Dockerfile copied `apps/web/public` into the runner, but that directory no longer exists after removing unused starter assets. Removed that COPY instruction; Next.js still serves the app icon from `src/app/icon.svg`.

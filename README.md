@@ -31,7 +31,6 @@ next-apollo-monorepo/
 │   │       ├── components/     # Shared app shell and navigation
 │   │       ├── providers/      # ApolloProvider (browser, mounted by pages)
 │   │       └── lib/            # apollo-rsc.ts (RSC-scoped client)
-│   │   └── public/             # Static URL assets (currently empty)
 │   │
 │   ├── api/                    # NestJS + Apollo Server 5 (code-first GraphQL)
 │   │   └── src/
