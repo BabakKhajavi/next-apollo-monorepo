@@ -48,21 +48,16 @@ next-apollo-monorepo/
 └── package.json
 
 
-                      Nx + pnpm Monorepo
-                              │
-             ┌────────────────┴────────────────┐
-             │                                 │
-         Applications                       Packages
-             │                                 │
-       ┌─────┴─────┐          ┌────────────────┼────────────────┐
-       │           │          │                │                │
-    Next.js      NestJS    Design System    Apollo Client    AI Helper
-       │           │          │                │                │
-    Features    Modules    Storybook      GraphQL Cache     LangChain
-       │           │                           │                │
-       └─────┬─────┘                           │                │
-             │                                 │                │
-             └──────────── Shared Contracts ───┴────────────────┘
+                Nx + pnpm Monorepo
+                        │
+          ┌─────────────┴─────────────┐
+          │                           │
+      Applications                 Packages
+          │                           │
+  ┌───┬───┼────────────┐    design-system, apollo-client,
+  │   │   │            │    graphql-contracts, ai-helper,
+ web api ai-worker  execution-worker   realtime, auth, shared, config
+(Next.js)(Nest)  (SQS worker)(SQS worker)
 
 
 ```
