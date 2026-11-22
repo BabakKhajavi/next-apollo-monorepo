@@ -11,6 +11,8 @@ Technology: Nx + pnpm + Next.js + NestJS + Apollo GraphQL + LangChain + AWS
 - `web` is hosted on ECS Fargate (standalone Next.js server, Dockerfile at `apps/web/Dockerfile`) behind CloudFront + S3 for static assets — deliberately not serverless like the rest of the backend: a `min 1` Fargate task gives deterministic per-request latency for SSR/RSC, which matters more here than the backend's scale-to-zero cost savings. See `infra/terraform-web/`.
 - Architecture/pipeline diagrams (standalone HTML, open directly in a browser) live in `docs/diagrams/`.
 
+![FlowPilot dashboard](docs/screenshots/dashboard.png)
+
 ```
 next-apollo-monorepo/
 │

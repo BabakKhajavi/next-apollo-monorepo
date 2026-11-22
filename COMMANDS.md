@@ -645,3 +645,12 @@ docker build -f apps/web/Dockerfile -t nam-web:public-copy-fix .
 ```
 
 The previous Dockerfile copied `apps/web/public` into the runner, but that directory no longer exists after removing unused starter assets. Removed that COPY instruction; Next.js still serves the app icon from `src/app/icon.svg`.
+
+### Add dashboard screenshot to README
+
+```sh
+mkdir -p docs/screenshots
+cp <lighthouse-devtools-screenshot> docs/screenshots/dashboard.png
+```
+
+User-supplied screenshot of the deployed dashboard (CloudFront URL), added so README shows the running app instead of only text description.
