@@ -39,7 +39,6 @@ next-apollo-monorepo/
 │
 ├── docker-compose.yml           # DynamoDB Local for dev (apps/api)
 ├── docs/diagrams/                # Standalone HTML architecture/pipeline diagrams
-├── tools/                        # Nx generators and scripts
 ├── .github/                      # CI/CD workflows (lint/test/build, terraform plan/apply,
 │                                 #   deploy-backend, deploy-web, release)
 │
