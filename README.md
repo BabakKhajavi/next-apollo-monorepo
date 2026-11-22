@@ -18,177 +18,30 @@ next-apollo-monorepo/
 │
 ├── apps/
 │   ├── web/                    # Next.js App Router — demo UI for the backend
-│   │   └── src/
-│   │       ├── app/            # URL routes: /, /executions, /workflows,
-│   │       │                   #   /workflows/[id]; layouts, loading/error UI,
-│   │       │                   #   and the Next.js icon convention
-│   │       │                   #   PreloadQuery+useSuspenseQuery for streamed
-│   │       │                   #   Client Component sections (Suspense)
-│   │       ├── features/       # dashboard/: home page UI and data/queries.ts;
-│   │       │                   #   executions/: shared table and data/queries.ts;
-│   │       │                   #   workflows/: GenerateWorkflowForm, Approve/
-│   │       │                   #   ExecuteButton, WorkflowHeader, ExecutionsList
-│   │       │                   #   (live updates in hooks/, status and AppSync
-│   │       │                   #   event helpers in utils/)
-│   │       ├── components/     # Shared app shell and navigation
-│   │       ├── providers/      # ApolloProvider (browser, mounted by pages)
-│   │       └── lib/            # apollo-rsc.ts (RSC-scoped client)
-│   │
 │   ├── api/                    # NestJS + Apollo Server 5 (code-first GraphQL)
-│   │   └── src/
-│   │       ├── graphql/        # One module per domain (workflow/, execution/,
-│   │       │                   #   dashboard/): model, repository, service,
-│   │       │                   #   resolver, module — each a feature module
-│   │       │                   #   imported into AppModule, own DI graph
-│   │       ├── dynamodb/       # DynamoDBDocumentClient provider (DynamoDbModule,
-│   │       │                   #   @Global), table/index name constants
-│   │       ├── sqs/            # SQS client provider (SqsModule, @Global) +
-│   │       │                   #   SqsService.sendMessage — workflow.service.ts
-│   │       │                   #   enqueues generation requests, execution.service.ts
-│   │       │                   #   enqueues execution requests
-│   │       ├── common/         # Paginated() generic connection factory,
-│   │       │                   #   cursor encode/decode (opaque base64 of
-│   │       │                   #   DynamoDB's LastEvaluatedKey)
-│   │       ├── app.module.ts   # GraphQLModule.forRoot, autoSchemaFile
-│   │       ├── main.ts         # Dev entry (Express HTTP listener)
-│   │       └── handler.ts      # Prod Lambda entry (exports `handler`) — bare
-│   │                            #   @apollo/server + @as-integrations/aws-lambda
-│   │                            #   inline here; skips Nest's HTTP adapter at
-│   │                            #   request time. Deployed via the `bundle` Nx
-│   │                            #   target: `nest build` (real tsc output —
-│   │                            #   NestJS's GraphQL schema builder + constructor
-│   │                            #   DI both need design:paramtypes, which esbuild
-│   │                            #   never emits) + `pnpm deploy --prod` for a
-│   │                            #   real, non-symlinked node_modules ->
-│   │                            #   dist-lambda-pkg/. ai-worker/execution-worker
-│   │                            #   stay on esbuild (plain functions, no Nest DI).
-│   │
 │   ├── ai-worker/              # SQS-triggered AI workflow generation worker
-│   │   └── src/
-│   │       ├── handler.ts      # Entry point — SQS event source mapping trigger
-│   │       │                   #   (exports `handler`). Deploy-and-test only,
-│   │       │                   #   no local runner.
-│   │       ├── services/       # workflow-generation.service.ts (processMessage):
-│   │       │                   #   @monorepo/ai-helper structured generation ->
-│   │       │                   #   DynamoDB update -> AppSync Events publish
-│   │       ├── types/          # WorkflowGenerationMessage
-│   │       ├── repositories/   # Narrow, self-contained Workflows table update
-│   │       │                   #   (not shared with apps/api — apps can't
-│   │       │                   #   depend on each other in this workspace)
-│   │       └── realtime/       # AppSync Events config + per-workflow channel naming
-│   │
-│   └── execution-worker/       # SQS-triggered workflow execution worker — same
-│       └── src/                 #   shape as ai-worker (handler.ts, services/, types/,
-│                                 #   repositories/, realtime/). Runs each action in
-│                                 #   Workflow.definition.actions: httpRequest is
-│                                 #   genuinely executed (real fetch); sendEmail/
-│                                 #   runScript are structural stubs (log + succeed) —
-│                                 #   no SES/sandboxed exec wired up for the demo.
+│   └── execution-worker/       # SQS-triggered workflow execution worker
 │
 ├── packages/
-│   ├── design-system/          # Badge, Button (real components, not stubs) +
-│   │                           #   Storybook (storybook CLI directly via
-│   │                           #   nx:run-commands — @nx/storybook 24.0.5 ships
-│   │                           #   no working executors)
-│   ├── apollo-client/          # Apollo Client + Next.js SSR; ./realtime subpath
-│   │                           #   is a hand-rolled AppSync Events browser client
-│   │                           #   (no published client library exists outside
-│   │                           #   the much heavier aws-amplify) — wire protocol
-│   │                           #   verified against the real deployed API before
-│   │                           #   being wired into React
-│   ├── graphql-contracts/      # Generated schema.graphql + typed operations
-│   │                           #   (GraphQL Code Generator, TypedDocumentNode) —
-│   │                           #   single codegen source for apps/web too, no
-│   │                           #   separate per-app codegen config
-│   ├── ai-helper/              # LangChain model factory (createChatModel: anthropic/
-│   │                           #   openai/gemini) + generateStructured() Zod helper —
-│   │                           #   provider-agnostic, reusable by any future AI feature
-│   ├── realtime/               # AppSync Events HTTP publish helper (publishEvent)
-│   ├── auth/                   # Shared authentication
-│   ├── shared/                 # Types, utils, validation
-│   └── config/                 # Shared tooling configuration
+│   ├── design-system/          # Shared UI components + Storybook
+│   ├── apollo-client/          # Apollo Client + AppSync Events realtime client
+│   ├── graphql-contracts/      # Generated schema + typed GraphQL operations
+│   ├── ai-helper/               # LangChain model factory + structured generation
+│   ├── realtime/                # AppSync Events publish helper
+│   ├── auth/                    # Shared authentication
+│   ├── shared/                  # Types, utils, validation
+│   └── config/                  # Shared tooling configuration
 │
 ├── infra/
-│   ├── terraform-backend/       # Real infra, deployed and verified against real AWS —
-│                                 #   DynamoDB (nam-workflows, nam-executions + GSIs), 3
-│                                 #   Lambdas (ai-worker/execution-worker esbuild-bundled
-│                                 #   to dist-lambda/handler.js; api packaged via `nest
-│                                 #   build` + `pnpm deploy --prod` to dist-lambda-pkg/ —
-│                                 #   run `pnpm run bundle:lambdas` before apply), API
-│                                 #   Gateway HTTP API fronting `api`, per-Lambda IAM
-│                                 #   roles (all resources prefixed `nam-` via
-│                                 #   var.project_name), SQS (workflow-generation +
-│                                 #   workflow-execution queues + DLQs), AppSync Events
-│                                 #   API (API_KEY auth, workflow-updates +
-│                                 #   execution-updates channel namespaces). `api`'s
-│                                 #   Lambda also has a `live` alias with Provisioned
-│                                 #   Concurrency (1 unit) — RSC pages call `api`
-│                                 #   server-side on every render, so this alias (not
-│                                 #   $LATEST) is what API Gateway's integration
-│                                 #   targets, removing cold-start latency from that
-│                                 #   path; deploy-backend.yml repoints it after every
-│                                 #   `api` deploy. State is remote (S3, versioned +
-│                                 #   encrypted + native locking) — see
-│                                 #   infra/terraform-bootstrap/ below.
-│   ├── terraform-web/           # Separate root module/state from infra/terraform-backend —
-│                                 #   the `web` app's own hosting infra, applied
-│                                 #   independently of the backend. VPC (public
-│                                 #   subnets only, no NAT — Fargate tasks get a
-│                                 #   public IP), ALB (HTTP, reachable only from
-│                                 #   CloudFront's managed prefix list), ECS Fargate
-│                                 #   cluster/service/task running the Next.js
-│                                 #   standalone server (min 1 task — no scale-out
-│                                 #   cold start — CPU-based autoscaling up to 3),
-│                                 #   ECR repo for the image, S3 bucket + CloudFront
-│                                 #   distribution (OAC, not legacy OAI) serving
-│                                 #   `_next/static/*` with a 1yr TTL while the ALB
-│                                 #   origin handles everything else (SSR/RSC,
-│                                 #   uncached). No custom domain — CloudFront's
-│                                 #   default `*.cloudfront.net` domain.
-│   └── terraform-bootstrap/     # Separate root module, own local state (chicken-and-
-│                                 #   egg: the state bucket can't manage its own
-│                                 #   backend). Creates the S3 state bucket and the
-│                                 #   GitHub OIDC IAM roles CI assumes — one set per
-│                                 #   app (github-terraform-plan/-apply for the
-│                                 #   backend, github-terraform-web-plan/-apply for
-│                                 #   web, each read-only on PRs / full-write on push
-│                                 #   to main only) plus the narrower app-deploy roles
-│                                 #   (github-lambda-deploy, github-web-deploy).
-│                                 #   Applied manually, rarely touched.
+│   ├── terraform-backend/       # DynamoDB, Lambdas, API Gateway, SQS, AppSync Events
+│   ├── terraform-web/           # VPC, ALB, ECS Fargate, CloudFront + S3 for web
+│   └── terraform-bootstrap/     # State bucket + GitHub OIDC IAM roles
 │
-├── docker-compose.yml          # DynamoDB Local for dev (apps/api)
-│
-├── docs/
-│   └── diagrams/                # Standalone HTML diagrams (architecture, pipelines) —
-│                                 #   open directly in a browser, no build step
-│
-├── tools/                      # Nx generators and scripts
-│
-├── .github/                    # CI/CD workflows — ci.yml (lint/test/build on every
-│                                 #   push/PR), terraform-plan.yml/terraform-apply.yml
-│                                 #   (infra/terraform-backend/**, backend), terraform-web-plan.yml/
-│                                 #   terraform-web-apply.yml (infra/terraform-web/**, web —
-│                                 #   same shape, separate concurrency group, since the two
-│                                 #   never share a state file), both apply workflows gated
-│                                 #   behind the `production` GitHub Environment's required
-│                                 #   reviewers. deploy-backend.yml (push to main or staging,
-│                                 #   or manual dispatch — one `detect` job runs `nx show
-│                                 #   projects --affected -t bundle` to find which of
-│                                 #   api/ai-worker/execution-worker actually changed, a
-│                                 #   matrixed `deploy` job then bundles + `aws lambda
-│                                 #   update-function-code --publish` only those, and for
-│                                 #   `api` specifically repoints its `live` alias at the
-│                                 #   newly published version afterward; Terraform's Lambda
-│                                 #   resources use `lifecycle.ignore_changes` on their code
-│                                 #   so this pipeline and `terraform apply` don't fight over
-│                                 #   source_code_hash). deploy-web.yml (push to main/staging —
-│                                 #   nx build+lint, Docker build/push to ECR, register a new
-│                                 #   ECS task-def revision, `update-service
-│                                 #   --force-new-deployment` + wait for stability, sync
-│                                 #   `.next/static`/`public` to the static S3 bucket,
-│                                 #   CloudFront invalidation). release.yml. All
-│                                 #   Terraform/deploy workflows assume an OIDC role each —
-│                                 #   no static AWS keys in CI.
+├── docker-compose.yml           # DynamoDB Local for dev (apps/api)
+├── docs/diagrams/                # Standalone HTML architecture/pipeline diagrams
+├── tools/                        # Nx generators and scripts
+├── .github/                      # CI/CD workflows (lint/test/build, terraform plan/apply,
+│                                 #   deploy-backend, deploy-web, release)
 │
 ├── nx.json
 ├── pnpm-workspace.yaml
