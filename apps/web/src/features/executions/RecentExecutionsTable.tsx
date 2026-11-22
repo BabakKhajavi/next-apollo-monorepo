@@ -10,8 +10,8 @@ import {
   type ExecutionStatus,
   type RecentExecutionsQuery,
 } from "@monorepo/graphql-contracts";
-import { executionStatusTone } from "@/features/workflows/status-tone";
-import { useExecutionLiveUpdates } from "@/features/workflows/useLiveUpdates";
+import { executionStatusTone } from "@/features/workflows/utils/status-tone";
+import { useExecutionLiveUpdates } from "@/features/workflows/hooks/useLiveUpdates";
 
 type Execution = RecentExecutionsQuery["recentExecutions"]["items"][number];
 
@@ -26,7 +26,7 @@ function ExecutionRow({ row }: { row: Execution }) {
         >
           {row.workflowName ?? `Workflow ${row.workflowId.slice(0, 8)}`}
         </Link>
-        <span className="block font-mono text-[10px] text-slate-400">
+        <span className="block font-mono text-xs text-slate-600">
           {row.id.slice(0, 12)}
         </span>
       </td>
@@ -153,7 +153,7 @@ export function RecentExecutionsTable({
           ))}
         </tbody>
       </table>
-      <p className="mt-3 text-xs text-slate-400">
+      <p className="mt-3 text-xs text-slate-600">
         Column sorting applies to this page of results.
       </p>
     </div>

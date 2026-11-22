@@ -1,6 +1,6 @@
 import { Activity, Check, Workflow, X } from "lucide-react";
 import { MetricCard } from "@monorepo/design-system";
-import { dashboardStats } from "./data";
+import { dashboardStats } from "./data/queries";
 
 export async function KpiSection() {
   const { totalWorkflows, totalExecutions, executionsByStatus } =

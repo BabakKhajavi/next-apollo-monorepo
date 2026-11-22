@@ -3,7 +3,7 @@ import { WorkflowsDocument } from "@monorepo/graphql-contracts";
 import { Badge, EmptyState } from "@monorepo/design-system";
 import { query } from "@/lib/apollo-rsc";
 import { GenerateWorkflowForm } from "@/features/workflows/GenerateWorkflowForm";
-import { workflowStatusTone } from "@/features/workflows/status-tone";
+import { workflowStatusTone } from "@/features/workflows/utils/status-tone";
 import { ApolloProvider } from "@/providers/ApolloProvider";
 
 export const dynamic = "force-dynamic";

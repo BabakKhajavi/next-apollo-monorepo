@@ -5,8 +5,8 @@ import { Badge } from "@monorepo/design-system";
 import { WorkflowDocument } from "@monorepo/graphql-contracts";
 import { ApproveButton } from "./ApproveButton";
 import { ExecuteButton } from "./ExecuteButton";
-import { workflowStatusTone } from "./status-tone";
-import { useWorkflowLiveUpdates } from "./useLiveUpdates";
+import { workflowStatusTone } from "./utils/status-tone";
+import { useWorkflowLiveUpdates } from "./hooks/useLiveUpdates";
 
 /**
  * Owns the Workflow query itself (rather than taking server-fetched data

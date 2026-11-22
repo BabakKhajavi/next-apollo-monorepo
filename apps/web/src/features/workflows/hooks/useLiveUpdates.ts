@@ -9,7 +9,7 @@ import {
   workflowChannel,
   type ExecutionUpdateEvent,
   type WorkflowUpdateEvent,
-} from "./realtime";
+} from "../utils/realtime";
 
 /**
  * Patches the normalized Apollo cache directly instead of refetching —

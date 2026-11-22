@@ -604,3 +604,35 @@ User had been generating one-off HTML diagrams (deploy pipeline, request flow, R
 mkdir -p docs/diagrams
 cp .claude-scratch/*.html docs/diagrams/   # web-pipeline.html, request-flow.html, rsc-caching-flow.html
 ```
+
+### Web App Router and feature cleanup
+
+Kept `src/app` for URL routes and Next.js special files, moved shared execution table/query code into `src/features/executions`, and removed unused placeholder folders and starter SVGs.
+
+```sh
+mkdir -p apps/web/src/features/executions
+mv apps/web/src/features/dashboard/RecentExecutionsTable.tsx apps/web/src/features/executions/RecentExecutionsTable.tsx
+rm apps/web/src/features/users/index.ts
+rm apps/web/public/file.svg apps/web/public/globe.svg apps/web/public/next.svg apps/web/public/vercel.svg apps/web/public/window.svg
+find apps/web/src -depth -type d -empty -delete
+pnpm nx show project web
+pnpm nx lint web
+pnpm nx build web
+```
+
+The execution query was extracted from `features/dashboard/data.ts` into `features/executions/data.ts`, and imports were updated. This keeps route entry points separate from reusable domain code while preserving `/`, `/executions`, and `/workflows` URLs.
+
+### Group web feature helpers by purpose
+
+```sh
+mkdir -p apps/web/src/features/dashboard/data apps/web/src/features/executions/data apps/web/src/features/workflows/hooks apps/web/src/features/workflows/utils
+mv apps/web/src/features/dashboard/data.ts apps/web/src/features/dashboard/data/queries.ts
+mv apps/web/src/features/executions/data.ts apps/web/src/features/executions/data/queries.ts
+mv apps/web/src/features/workflows/useLiveUpdates.ts apps/web/src/features/workflows/hooks/useLiveUpdates.ts
+mv apps/web/src/features/workflows/status-tone.ts apps/web/src/features/workflows/utils/status-tone.ts
+mv apps/web/src/features/workflows/realtime.ts apps/web/src/features/workflows/utils/realtime.ts
+pnpm nx lint web
+pnpm nx build web
+```
+
+Updated imports after the moves. `data/` holds server queries, `hooks/` holds live-update hooks, and `utils/` holds status mapping and AppSync channel helpers.

@@ -3,8 +3,8 @@
 import { useSuspenseQuery } from "@apollo/client/react";
 import { Badge } from "@monorepo/design-system";
 import { ExecutionsDocument, type ExecutionStatus } from "@monorepo/graphql-contracts";
-import { executionStatusTone } from "./status-tone";
-import { useExecutionLiveUpdates } from "./useLiveUpdates";
+import { executionStatusTone } from "./utils/status-tone";
+import { useExecutionLiveUpdates } from "./hooks/useLiveUpdates";
 
 /**
  * Rendered inside a <PreloadQuery> (see workflows/[id]/page.tsx) — data was

@@ -17,17 +17,21 @@ next-apollo-monorepo/
 ├── apps/
 │   ├── web/                    # Next.js App Router — demo UI for the backend
 │   │   └── src/
-│   │       ├── app/            # /, /workflows, /workflows/[id] — RSC pages,
+│   │       ├── app/            # URL routes: /, /executions, /workflows,
+│   │       │                   #   /workflows/[id]; layouts, loading/error UI,
+│   │       │                   #   and the Next.js icon convention
 │   │       │                   #   PreloadQuery+useSuspenseQuery for streamed
 │   │       │                   #   Client Component sections (Suspense)
-│   │       ├── features/       # workflows/: GenerateWorkflowForm, Approve/
+│   │       ├── features/       # dashboard/: home page UI and data/queries.ts;
+│   │       │                   #   executions/: shared table and data/queries.ts;
+│   │       │                   #   workflows/: GenerateWorkflowForm, Approve/
 │   │       │                   #   ExecuteButton, WorkflowHeader, ExecutionsList
-│   │       │                   #   (all live-updated via AppSync Events ->
-│   │       │                   #   Apollo cache.modify, no polling), status-tone
-│   │       │                   #   mapping, realtime.ts (channel names + typed
-│   │       │                   #   event payloads)
-│   │       ├── providers/      # ApolloProvider (browser, mounted in layout.tsx)
+│   │       │                   #   (live updates in hooks/, status and AppSync
+│   │       │                   #   event helpers in utils/)
+│   │       ├── components/     # Shared app shell and navigation
+│   │       ├── providers/      # ApolloProvider (browser, mounted by pages)
 │   │       └── lib/            # apollo-rsc.ts (RSC-scoped client)
+│   │   └── public/             # Static URL assets (currently empty)
 │   │
 │   ├── api/                    # NestJS + Apollo Server 5 (code-first GraphQL)
 │   │   └── src/

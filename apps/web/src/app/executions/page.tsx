@@ -6,8 +6,8 @@ import {
   type ExecutionStatus,
 } from "@monorepo/graphql-contracts";
 import { PreloadQuery } from "@/lib/apollo-rsc";
-import { recentExecutions } from "@/features/dashboard/data";
-import { RecentExecutionsTable } from "@/features/dashboard/RecentExecutionsTable";
+import { recentExecutions } from "@/features/executions/data/queries";
+import { RecentExecutionsTable } from "@/features/executions/RecentExecutionsTable";
 import { ApolloProvider } from "@/providers/ApolloProvider";
 
 export const dynamic = "force-dynamic";

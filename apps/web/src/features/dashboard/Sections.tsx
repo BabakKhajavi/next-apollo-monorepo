@@ -7,9 +7,10 @@ import {
   type ExecutionStatus,
 } from "@monorepo/graphql-contracts";
 import { PreloadQuery } from "@/lib/apollo-rsc";
-import { dashboardAnalytics, dashboardStats, recentExecutions } from "./data";
+import { dashboardAnalytics, dashboardStats } from "./data/queries";
 import { PerformanceChart, StatusChart, TrendChart } from "./ChartIslands";
-import { RecentExecutionsTable } from "./RecentExecutionsTable";
+import { RecentExecutionsTable } from "@/features/executions/RecentExecutionsTable";
+import { recentExecutions } from "@/features/executions/data/queries";
 import { ActivityFeed } from "./ActivityFeed";
 
 export function SectionSkeleton({ title }: { title: string }) {

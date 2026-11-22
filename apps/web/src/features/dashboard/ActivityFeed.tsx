@@ -12,7 +12,7 @@ import {
   appSyncEventsEnabled,
   executionChannel,
   type ExecutionUpdateEvent,
-} from "@/features/workflows/realtime";
+} from "@/features/workflows/utils/realtime";
 
 type Execution = RecentExecutionsQuery["recentExecutions"]["items"][number];
 
