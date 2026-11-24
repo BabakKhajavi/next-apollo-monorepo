@@ -22,7 +22,6 @@
   --line:#32363a; --accent:#5fb98a; --accent-soft:#1e2e26;
   --warn:#e0a25a; --warn-soft:#352a1b; color-scheme:dark;
 }
-link[rel="stylesheet"]{}
 *{box-sizing:border-box}
 body{
   background:var(--bg); color:var(--ink); font-family:var(--font-body);
@@ -30,22 +29,19 @@ body{
   padding-right:max(16px, env(safe-area-inset-right,0px));
 }
 .wrap{max-width:980px; margin:0 auto; padding-block:40px 64px}
-h1{font-family:var(--font-display); font-size:clamp(22px,3vw,30px); margin:0 0 6px; text-wrap:balance}
-.sub{color:var(--muted); font-size:14px; margin:0 0 32px}
+h1{font-family:var(--font-display); font-size:clamp(22px,3vw,28px); margin:0 0 28px; text-wrap:balance}
 figure{margin:0 0 36px; background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:20px 16px}
 figcaption{font-size:13px; color:var(--muted); margin-top:12px; padding:0 8px}
 svg{width:100%; height:auto; display:block}
 text{font-family:var(--font-mono); font-size:11px; fill:currentColor}
 .lbl{font-family:var(--font-body); font-size:11.5px; fill:var(--muted)}
 .title{font-family:var(--font-display); font-size:13px; fill:currentColor; font-weight:600}
-code{font-family:var(--font-mono); background:var(--accent-soft); color:var(--accent); padding:1px 5px; border-radius:4px; font-size:12.5px}
 @media (max-width:600px){ figure{padding:16px 10px} }
 </style>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap">
 
 <div class="wrap">
   <h1>Web Deploy Pipeline</h1>
-  <p class="sub"><code>deploy-web.yml</code> — push to <code>main</code>/<code>staging</code></p>
 
   <figure>
     <svg viewBox="0 0 940 260" role="img" aria-label="Pipeline: build and lint, then docker build and push to ECR, then register task definition, then update ECS service and sync S3, then invalidate CloudFront">
@@ -55,7 +51,6 @@ code{font-family:var(--font-mono); background:var(--accent-soft); color:var(--ac
         </marker>
       </defs>
 
-      <!-- stage boxes -->
       <g font-weight="600">
         <rect x="10" y="40" width="130" height="60" rx="8" fill="none" stroke="currentColor" opacity="0.5"/>
         <text x="75" y="65" text-anchor="middle" class="title">build + lint</text>
@@ -82,7 +77,6 @@ code{font-family:var(--font-mono); background:var(--accent-soft); color:var(--ac
         <text x="875" y="97" text-anchor="middle" class="lbl">CloudFront /*</text>
       </g>
 
-      <!-- arrows -->
       <line x1="140" y1="70" x2="186" y2="70" stroke="currentColor" marker-end="url(#arrow)"/>
       <line x1="340" y1="70" x2="386" y2="70" stroke="currentColor" marker-end="url(#arrow)"/>
       <path d="M 550 55 L 596 40" stroke="currentColor" fill="none" marker-end="url(#arrow)"/>
@@ -128,6 +122,6 @@ code{font-family:var(--font-mono); background:var(--accent-soft); color:var(--ac
       <text x="820" y="85" text-anchor="middle" class="title">v1 stopped</text>
       <text x="820" y="102" text-anchor="middle" class="lbl">only v2 remains</text>
     </svg>
-    <figcaption>Rolling update, not blue/green: no second target group, no traffic-weight control — just a brief in-place overlap.</figcaption>
+    <figcaption>Rolling update, not blue/green: no second target group, just a brief in-place overlap.</figcaption>
   </figure>
 </div>

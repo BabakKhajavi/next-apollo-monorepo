@@ -1,4 +1,4 @@
-<title>Request Flow Architecture</title>
+<title>Request Flow Diagram</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap">
@@ -47,16 +47,15 @@
   main { max-width: 980px; margin: 0 auto; }
 
   h1 {
-    font-size: clamp(1.5rem, 4vw, 2rem);
+    font-size: clamp(1.4rem, 4vw, 1.9rem);
     letter-spacing: -0.01em;
-    margin: 0 0 6px;
+    margin: 0 0 24px;
     text-wrap: balance;
   }
-  .sub { color: var(--muted); margin: 0 0 36px; max-width: 65ch; line-height: 1.5; }
 
   h2 {
     font-size: 1.05rem;
-    margin: 0 0 4px;
+    margin: 0 0 14px;
     display: flex;
     align-items: baseline;
     gap: 10px;
@@ -70,67 +69,24 @@
     border-radius: 999px;
     padding: 2px 9px;
   }
-  .fig-note { color: var(--muted); font-size: 0.88rem; margin: 0 0 18px; max-width: 70ch; line-height: 1.5; }
 
-  figure { margin: 0 0 14px; }
+  figure { margin: 0 0 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px 16px; }
   figure svg { width: 100%; height: auto; display: block; }
-  figcaption { color: var(--muted); font-size: 0.82rem; margin-top: 8px; }
+  figcaption { color: var(--muted); font-size: 0.82rem; margin-top: 10px; }
 
-  section { margin-bottom: 48px; }
-
-  ol.steps {
-    margin: 18px 0 0;
-    padding: 0;
-    list-style: none;
-    display: grid;
-    gap: 10px;
-  }
-  ol.steps li {
-    display: grid;
-    grid-template-columns: 28px 1fr;
-    gap: 12px;
-    align-items: start;
-    padding: 10px 12px;
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    background: var(--surface);
-  }
-  ol.steps li.accent { border-color: var(--accent); background: var(--accent-soft); }
-  ol.steps .n {
-    font-family: "JetBrains Mono", monospace;
-    font-size: 0.78rem;
-    color: var(--muted);
-    padding-top: 1px;
-  }
-  ol.steps .body b { font-family: "JetBrains Mono", monospace; font-weight: 600; font-size: 0.92em; }
-  ol.steps .why { color: var(--muted); font-size: 0.85rem; display: block; margin-top: 2px; }
+  section { margin-bottom: 40px; }
+  section:last-child { margin-bottom: 0; }
 
   .node-label { font-family: "JetBrains Mono", monospace; font-size: 11.5px; font-weight: 500; }
   .node-sub { font-family: "JetBrains Mono", monospace; font-size: 9.5px; opacity: 0.72; }
   .edge-label { font-family: "JetBrains Mono", monospace; font-size: 10.5px; }
-
-  footer { border-top: 1px solid var(--line); padding-top: 18px; color: var(--muted); font-size: 0.85rem; line-height: 1.6; }
-  footer code { font-family: "JetBrains Mono", monospace; font-size: 0.9em; }
 </style>
 
 <main>
   <h1>Request flow: nam-web</h1>
-  <p class="sub">
-    Two request shapes through the same AWS footprint: a page load (synchronous,
-    round-trip) and a mutation that fans out into an async job (generate or
-    execute a workflow). The orange boxes are the two places this architecture
-    deliberately pays for a warm instance instead of scaling to zero, because
-    cold starts there would delay the thing the user is staring at.
-  </p>
 
   <section>
     <h2>Figure 1 <span class="tag">page load / GraphQL query</span></h2>
-    <p class="fig-note">
-      Every request — HTML page, RSC payload, or a GraphQL query made from
-      inside a React Server Component — takes this same path. Static
-      <code>_next/static/*</code> assets branch off at CloudFront and never
-      reach the origin on a cache hit.
-    </p>
     <figure>
       <svg viewBox="0 0 1300 420" role="img" aria-label="Browser requests a page through CloudFront, which serves cached static assets from S3 directly or forwards to an ALB in front of an ECS Fargate task running the Next.js server; that server calls API Gateway, which invokes a Provisioned-Concurrency Lambda alias that reads DynamoDB; the GraphQL response and rendered page travel back the same path to the browser.">
         <defs>
@@ -139,7 +95,6 @@
           </marker>
         </defs>
 
-        <!-- main row -->
         <g stroke="currentColor" fill="none">
           <line x1="170" y1="88" x2="236" y2="88" marker-end="url(#arrow1)" />
           <line x1="390" y1="88" x2="456" y2="88" marker-end="url(#arrow1)" />
@@ -153,7 +108,6 @@
         <text x="863" y="78" text-anchor="middle" class="edge-label" fill="currentColor">fetch()</text>
         <text x="1083" y="78" text-anchor="middle" class="edge-label" fill="currentColor">invoke</text>
 
-        <!-- nodes row 1 -->
         <g>
           <rect x="20" y="60" width="150" height="56" rx="10" fill="none" stroke="currentColor" />
           <text x="95" y="83" text-anchor="middle" class="node-label" fill="currentColor">Browser</text>
@@ -185,47 +139,27 @@
           <text x="1193" y="95" text-anchor="middle" class="node-sub" fill="currentColor">Provisioned Conc. ×1</text>
         </g>
 
-        <!-- S3 branch under CloudFront -->
         <line x1="313" y1="116" x2="313" y2="180" stroke="currentColor" fill="none" marker-end="url(#arrow1)" />
         <text x="330" y="150" class="edge-label" fill="currentColor">cache hit</text>
         <rect x="236" y="196" width="154" height="56" rx="10" fill="none" stroke="currentColor" stroke-dasharray="4 3" />
         <text x="313" y="219" text-anchor="middle" class="node-label" fill="currentColor">S3 (OAC)</text>
         <text x="313" y="234" text-anchor="middle" class="node-sub" fill="currentColor">/_next/static/*, 1yr TTL</text>
 
-        <!-- DynamoDB under Lambda -->
         <line x1="1193" y1="116" x2="1193" y2="200" stroke="currentColor" fill="none" marker-end="url(#arrow1)" />
         <text x="1215" y="162" class="edge-label" fill="currentColor">Query / GetItem</text>
         <rect x="1116" y="216" width="154" height="56" rx="10" fill="none" stroke="currentColor" />
         <text x="1193" y="239" text-anchor="middle" class="node-label" fill="currentColor">DynamoDB</text>
         <text x="1193" y="254" text-anchor="middle" class="node-sub" fill="currentColor">workflows / executions</text>
 
-        <!-- return path: starts at the Lambda (it reads DynamoDB, then returns), not at DynamoDB itself -->
         <path d="M 1240 116 L 1240 340 L 95 340 L 95 116" fill="none" stroke="currentColor" stroke-dasharray="3 4" marker-end="url(#arrow1)" />
         <text x="640" y="356" text-anchor="middle" class="edge-label" fill="currentColor">λ api's response: GraphQL JSON → rendered HTML / RSC payload, back through API Gateway → Fargate → ALB → CloudFront</text>
       </svg>
-      <figcaption>Figure 1. Synchronous page-load path. Orange boxes are the two warm-by-design hops (Fargate task, Provisioned-Concurrency Lambda alias) — everything else scales normally, these two are kept warm on purpose.</figcaption>
+      <figcaption>Orange boxes are kept warm (min 1 task, Provisioned Concurrency) — no scale-out cold start on the render path.</figcaption>
     </figure>
-
-    <ol class="steps">
-      <li><span class="n">1</span><span class="body">Browser → <b>CloudFront</b> — single HTTPS request for the page, an RSC payload, or (on a client-side mutation) a GraphQL call made from the browser itself.</span></li>
-      <li><span class="n">2</span><span class="body"><b>CloudFront</b> branches on path: <b>_next/static/*</b> is served straight from <b>S3</b> (no origin hit on a cache hit, 1-year TTL since filenames are content-hashed); everything else forwards to the ALB.</span></li>
-      <li><span class="n">3</span><span class="body"><b>ALB</b> — reachable only from CloudFront's managed prefix list, forwards to the Fargate task on port 3000.</span></li>
-      <li class="accent"><span class="n">4</span><span class="body"><b>ECS Fargate</b> runs the Next.js standalone server. React Server Components render here; if the page needs data, the server itself calls the GraphQL API over HTTPS.<span class="why">Kept at min 1 task on purpose — no scale-out cold start, deterministic render latency.</span></span></li>
-      <li><span class="n">5</span><span class="body"><b>API Gateway</b> (HTTP API) — the GraphQL endpoint's public front door, proxies straight through to Lambda.</span></li>
-      <li class="accent"><span class="n">6</span><span class="body">The integration targets the <b>live</b> alias of the <b>api</b> Lambda, not <b>$LATEST</b>.<span class="why">That alias carries Provisioned Concurrency (1 unit) — RSC renders hit this Lambda on every page load, so it's warmed the same way the web server is.</span></span></li>
-      <li><span class="n">7</span><span class="body"><b>api</b> Lambda reads/writes <b>DynamoDB</b> (workflows, executions tables) to resolve the query.</span></li>
-      <li><span class="n">8</span><span class="body">Response (GraphQL JSON) flows back through API Gateway → Fargate, where it's folded into the rendered HTML/RSC payload → ALB → CloudFront → browser.</span></li>
-    </ol>
   </section>
 
   <section>
     <h2>Figure 2 <span class="tag">mutation → async job → live push</span></h2>
-    <p class="fig-note">
-      "Generate workflow" and "Execute workflow" don't wait for the real work —
-      step 6 above enqueues a job and returns immediately. The job runs on a
-      separate Lambda, and its result reaches the browser over a WebSocket
-      connection the page already opened on load, not as an HTTP response.
-    </p>
     <figure>
       <svg viewBox="0 0 1300 260" role="img" aria-label="On a mutation, the api Lambda enqueues a message to SQS instead of doing the work inline; a worker Lambda consumes it, updates DynamoDB, and publishes an event to AppSync Events, which pushes it over a WebSocket to the browser's already-open real-time connection.">
         <defs>
@@ -276,11 +210,7 @@
         <rect x="20" y="206" width="154" height="44" rx="10" fill="none" stroke="currentColor" stroke-dasharray="4 3" />
         <text x="97" y="232" text-anchor="middle" class="node-label" fill="currentColor">Browser (same tab)</text>
       </svg>
-      <figcaption>Figure 2. Everything here runs after the HTTP response from Figure 1 has already completed — the browser's WebSocket connection is what makes the UI update without polling.</figcaption>
+      <figcaption>Browser already holds a persistent WebSocket to AppSync Events, opened on page load — this arrow lands on that existing connection, not a new request.</figcaption>
     </figure>
   </section>
-
-  <footer>
-    One connection the diagrams can't show as a hop: on page load, the browser also opens a persistent WebSocket straight to <code>AppSync Events</code>' realtime endpoint and subscribes to this workflow's channel. Figure 2's last arrow lands on that existing connection — it's not a new request.
-  </footer>
 </main>
